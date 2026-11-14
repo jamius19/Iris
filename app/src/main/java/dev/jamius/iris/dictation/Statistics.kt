@@ -86,9 +86,9 @@ fun cloudKey(s: Settings): String {
     return "$provider|${s.activeSttModel}$upload"
 }
 
-/** "OpenAI · gpt-live-transcribe", "Deepgram · nova-3 (upload)". */
+/** "OpenAI · gpt-live-transcribe", "Deepgram · nova-3 (Non Real-time)". */
 fun cloudTitle(s: Settings): String {
-    val upload = if (s.sttDeepgram && s.deepgramUpload) " (upload)" else ""
+    val upload = if (s.sttDeepgram && s.deepgramUpload) " (Non Real-time)" else ""
     return "${sttProviderLabel(s.sttProviderId)} · ${s.activeSttModel}$upload"
 }
 

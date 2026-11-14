@@ -61,7 +61,7 @@ class StatisticsTest {
         assertEquals("Deepgram · nova-3", cloudTitle(deepgram))
         val upload = deepgram.copy(deepgramUpload = true)
         assertEquals("deepgram|nova-3|upload", cloudKey(upload))
-        assertEquals("Deepgram · nova-3 (upload)", cloudTitle(upload))
+        assertEquals("Deepgram · nova-3 (Non Real-time)", cloudTitle(upload))
         // Deepgram's switch means nothing for another provider.
         assertEquals("openai|gpt-live-transcribe", cloudKey(openAi.copy(deepgramUpload = true)))
     }

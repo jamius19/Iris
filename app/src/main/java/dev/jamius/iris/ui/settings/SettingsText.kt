@@ -12,13 +12,6 @@ import dev.jamius.iris.stt.ondevice.SpeedVerdict
 import dev.jamius.iris.stt.ondevice.roundToTenth
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
-/** The saved model's mode, for Soniox's model field helper; [streams] without [live]: text after stop. */
-fun sttModeText(live: Boolean, streams: Boolean = live): String = when {
-    live -> "Mode: live"
-    streams -> "Mode: streams, text after stop"
-    else -> "Mode: after stop"
-}
-
 fun reasoningEffortLabel(effort: String?): String = when (effort) {
     null -> "Model default"
     "xhigh" -> "Extra high"

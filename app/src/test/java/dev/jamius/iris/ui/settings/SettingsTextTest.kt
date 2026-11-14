@@ -21,13 +21,6 @@ import org.junit.Test
 class SettingsTextTest {
 
     @Test
-    fun modeText() {
-        assertEquals("Mode: live", sttModeText(live = true))
-        assertEquals("Mode: streams, text after stop", sttModeText(live = false, streams = true))
-        assertEquals("Mode: after stop", sttModeText(live = false))
-    }
-
-    @Test
     fun reasoningLabels() {
         assertEquals("Model default", reasoningEffortLabel(null))
         assertEquals("Extra high", reasoningEffortLabel("xhigh"))
