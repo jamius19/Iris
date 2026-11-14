@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * The settings UI palette. Light is the Figma design's, exactly; dark is derived from it (the design has no dark
- * mode). Logo colours live in `res/values(-night)/colors.xml` (`logo_body`, `logo_capsule`), since the logo is a
+ * mode). Logo colours live in `res/values(-night)/colors.xml` (`logo_body`, `logo_wave`), since the logo is a
  * VectorDrawable.
  *
  * | Token | Light (Figma) | Dark (derived) | Used for |
