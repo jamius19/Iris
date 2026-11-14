@@ -171,7 +171,7 @@ fun TranscriptionPage(
                     models = catalogs.sttModelIds,
                     loading = catalogs.gatewayLoading,
                     loadError = catalogs.gatewayError,
-                    helper = "Live models show text as you speak; others transcribe after you stop.",
+                    helper = "Live/real-time models show text as you speak. Others transcribe after you stop.",
                     onLoad = catalogs::loadGateway,
                     onSave = {
                         repository.setGatewaySttModel(
@@ -202,8 +202,7 @@ fun TranscriptionPage(
                     models = sonioxState.models?.map { it.id },
                     loading = sonioxState.loading,
                     loadError = sonioxState.error,
-                    helper = "Real-time models stream; other models upload after you stop. " +
-                            sttModeText(sonioxLive),
+                    helper = "Real-time (rt) models show text as you speak. Async models transcribe after you stop.",
                     onLoad = sonioxCatalog::refresh,
                     onSave = { repository.setSonioxSttModel(it) },
                     saver = saver,
@@ -216,7 +215,7 @@ fun TranscriptionPage(
                     models = catalogs.openAiModels,
                     loading = catalogs.openAiLoading,
                     loadError = catalogs.openAiError,
-                    helper = "Realtime models stream; other models upload after you stop.",
+                    helper = "Live/real-time models show text as you speak. Others transcribe after you stop.",
                     onLoad = catalogs::loadOpenAi,
                     onSave = { repository.setSttModel(it) },
                     saver = saver,

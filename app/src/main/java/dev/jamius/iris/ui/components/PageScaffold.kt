@@ -104,7 +104,7 @@ fun PageScaffold(title: String?, onBack: (() -> Unit)?, content: @Composable Col
                         contentDescription = "Iris",
                         modifier = Modifier
                             .padding(start = 7.dp, bottom = 7.dp) // 22 dp to the first card
-                            .height(30.dp)
+                            .height(19.dp)
                     )
                 } else {
                     Row(Modifier.heightIn(min = ControlHeight), verticalAlignment = Alignment.CenterVertically) {

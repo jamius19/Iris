@@ -22,5 +22,5 @@
     <!-- Settings UI: window background (no flash before Compose draws) and the logo's two tones. -->
     <color name="settings_background">#FFE2E7E7</color>
     <color name="logo_body">#FF3F3F42</color>
-    <color name="logo_capsule">#FF777A80</color>
+    <color name="logo_wave">#FF2B2B2D</color>
 </resources>
