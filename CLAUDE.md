@@ -1,7 +1,7 @@
 # Iris
 
 Android voice dictation app (Kotlin, Jetpack Compose, single `:app` module, package `dev.jamius.iris`).
-An AccessibilityService shows a bubble overlay when a text field is focused. Tap the mic to dictate: a pill with a
+An AccessibilityService shows a bubble overlay when a text field is focused. Tap the bubble to dictate: a pill with a
 live waveform slides out, the partial transcript streams in a panel beside the bubble. Tap the pill to stop: the
 transcript is finalized, filler words removed, optionally cleaned up by an LLM, then inserted at the cursor.
 STT is cloud (OpenAI, Vercel AI Gateway, Deepgram, Soniox) or on device (sherpa-onnx models downloaded in

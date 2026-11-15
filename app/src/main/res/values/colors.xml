@@ -7,7 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <!-- Idle (mic) circle: contrasts with the theme; night values in values-night. -->
+    <!-- Idle (waveform) circle: contrasts with the theme; night values in values-night. -->
     <color name="bubble_idle">#FF000000</color>
     <color name="bubble_idle_icon">#FFFFFFFF</color>
     <!-- Cancel (✕) and spinner circle; night values in values-night. -->

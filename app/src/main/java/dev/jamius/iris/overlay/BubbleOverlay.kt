@@ -223,6 +223,7 @@ class BubbleOverlay(
      */
     private fun animateStack(enter: Boolean) {
         stackExiting = !enter // Before the cancel below, so a cancelled exit doesn't remove the stack.
+        bubble.drawWave(enter)
         stackAnimator?.cancel()
         stackAnimator = ValueAnimator.ofFloat(stack.alpha, if (enter) 1f else 0f).apply {
             duration = if (enter) STACK_IN_MS else STACK_OUT_MS

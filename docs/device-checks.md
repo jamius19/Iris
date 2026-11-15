@@ -16,7 +16,7 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 
 ## Overlay
 - Rotation while Listening and Finalizing: bubble re-snaps, panel follows, session isn't lost.
-- Mic -> ✕ morph and pill slide are smooth on both edges; dark mode colours update while shown.
+- Waveform -> ✕ morph and pill slide are smooth on both edges; dark mode colours update while shown.
 - Dragging from the pill never stops, dragging from the ✕ never cancels; tapping the gap stops.
 - Near the IME / bottom the pill opens upward, and flips without a flicker when the IME shows or hides.
 - Re-show after focus loss mid-Finalizing restores spinner and panel without replayed animations.
@@ -31,6 +31,14 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
   landscape) it may sit ~6 dp lower at the bottom edge (accepted).
 - Android 13+, landscape, keyboard up, bubble near the top, Listening: the whole pill shows (not cut off at the top).
 - Rapid focus changes (hide mid-show, show mid-hide): the bubble turns back smoothly, never flashes sharp.
+- At rest, show: the waveform draws itself left to right while the bubble fades in; hide: it un-draws while it
+  fades out. Rapid focus changes reverse it from where it is, with no jump or full-wave flash. Its size and weight
+  look balanced in the circle, in light and dark mode, also on Android 12 and below (no blur).
+- Leaving a field while Listening: no waveform appears as the bubble fades out. Returning mid-Finalizing: spinner
+  only, no waveform draw.
+- Back to rest while shown (after Done, after an error, and after cancelling with the ✕): the waveform draws itself
+  in again as the circle turns back, without also growing in or flashing fully drawn first. Exception: a ✕ cancel
+  before the ✕ has fully turned in (~250 ms) reverses the morph, so the full wave grows back instead (intended).
 
 ## VAD and Speed (real voice)
 - First and last words aren't clipped, incl. speaking right after the tap and stopping right after the last word.
@@ -60,7 +68,7 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Whisper with `de` and with a blank language.
 - Nemotron: live text while recording; decode faster than real time on a mid-range phone (`Decoded X ms of audio
   in Y ms`, Y < X); the first word after the tap isn't clipped with Skip Silence off; last words kept at stop; a
-  5+ min dictation; ✕ then the mic again at once starts a new stream with no hang.
+  5+ min dictation; ✕ then the bubble again at once starts a new stream with no hang.
 - Parakeet load time on a mid-range phone, and Finalizing stays within the deadline.
 - Memory (`adb shell dumpsys meminfo dev.jamius.iris`) after preload and after the Unload Model delay
   (`Released <id>`). A changed delay applies mid-countdown; "Never" keeps it loaded.
