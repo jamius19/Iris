@@ -9,6 +9,10 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
+import android.graphics.Rect
+import android.graphics.Region
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.text.Layout
@@ -39,7 +43,7 @@ import kotlin.math.roundToInt
  *
  * The bubble window is a stack: the button ([BubbleView]) and, while listening, the stop pill ([PillView]) sliding
  * out below it, or above it if it wouldn't fit below ([pillOpensUp]). The pill is GONE when collapsed, so the
- * WRAP_CONTENT window is just the button at rest.
+ * WRAP_CONTENT window is just the button at rest, plus the blur margin on API 33+ ([blurMarginPx]).
  *
  * The overlay owns no dictation logic: [onButtonTap] and [onPillTap] report taps, the owner drives [setStatus],
  * [setLevel] and [showText]/[hideText]. [onMoved] reports where the user dropped the bubble, for persisting.
@@ -59,11 +63,24 @@ class BubbleOverlay(
     /** Distance from the stack's button-side edge to the pill view: the pill view starts at the circle's centre. */
     private val pillMargin = bubble.circleInsetPx + bubble.circlePx / 2
     private val expandedHeight = pillMargin + pill.heightPx
+
+    /**
+     * Transparent room around the stack, so the show/hide blur fades out before the window's edge. API 33+ only:
+     * below that there's no blur, and no way to stop the bigger window catching taps (see [updateTouchRegion]).
+     */
+    private val blurMarginPx =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) (STACK_BLUR_MARGIN_DP * density).roundToInt() else 0
+    private val maxBlurPx = STACK_MAX_BLUR_DP * density
     private val stack = FrameLayout(context).apply {
+        setPadding(blurMarginPx, blurMarginPx, blurMarginPx, blurMarginPx)
         addView(pill, FrameLayout.LayoutParams(WRAP, WRAP).apply { topMargin = pillMargin })
         addView(bubble, FrameLayout.LayoutParams(WRAP, WRAP))
+        addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateTouchRegion() }
     }
-    private val bubbleParams = overlayParams(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+    private val bubbleParams = overlayParams(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE).apply {
+        // Lets the margin pass the display edge; otherwise the system pushes the window on screen, moving the button.
+        if (blurMarginPx > 0) flags = flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+    }
 
     /** The stack window is added, also while it animates out ([stackExiting]); false once it is removed. */
     private var bubbleShown = false
@@ -72,10 +89,16 @@ class BubbleOverlay(
     private var stackExiting = false
     private var stackAnimator: ValueAnimator? = null
 
-    /** Display y of the button's top; the window's y differs while the pill opens up. */
+    /** Display x of the button's left; the window's x is [blurMarginPx] less. */
+    private var bubbleX = 0
+
+    /** Display y of the button's top; the window's y differs by [blurMarginPx] and while the pill opens up. */
     private var buttonY = 0
     private var expanded = false
     private var revealAnimator: ValueAnimator? = null
+
+    /** The bubble window's applied touch region (see [updateTouchRegion]); null for a new window. */
+    private var touchRect: Rect? = null
 
     /** The pill's direction, decided while it is visible and kept after it collapses, so the panel doesn't jump. */
     private var pillUp = false
@@ -135,8 +158,8 @@ class BubbleOverlay(
     }
 
     /**
-     * Fades and zooms the bubble in, and the panel if it should show (see [showText]), in their current state (no
-     * replayed status/pill animations). During [hide]'s exit animation, both turn back from where they are.
+     * Fades, zooms and blurs the bubble in, and the panel if it should show (see [showText]), in their current state
+     * (no replayed status/pill animations). During [hide]'s exit animation, both turn back from where they are.
      */
     fun show() {
         if (bubbleShown && !stackExiting) return
@@ -166,7 +189,7 @@ class BubbleOverlay(
     }
 
     /**
-     * Fades and zooms the bubble out, then removes its window; the panel animates out alongside. Until removed,
+     * Fades, zooms and blurs the bubble out, then removes its window; the panel animates out alongside. Until removed,
      * [bubbleShown] stays true and taps are ignored; [showText] keeps the text for [show]. With [animate] false
      * (teardown) both windows are removed at once. The status and panel text are left to the owner.
      */
@@ -189,9 +212,15 @@ class BubbleOverlay(
         if (!bubbleShown) return
         windowManager.removeViewImmediate(stack) // See removePanel().
         bubbleShown = false
+        blurStack(1f) // Clears the effect.
+        touchRect = null
+        stack.requestLayout() // A re-added stack could skip layout, which sets the new window's touch region.
     }
 
-    /** Fades and zooms the stack in or out (then removes it) around the circle's centre; continues from mid-way. */
+    /**
+     * Fades, zooms and blurs the stack in or out (then removes it) around the circle's centre; continues from
+     * mid-way.
+     */
     private fun animateStack(enter: Boolean) {
         stackExiting = !enter // Before the cancel below, so a cancelled exit doesn't remove the stack.
         stackAnimator?.cancel()
@@ -205,12 +234,36 @@ class BubbleOverlay(
                 stack.scaleX = scale
                 stack.scaleY = scale
                 // Set per frame: the pill may flip meanwhile, moving the button within the stack (see placeStack()).
-                stack.pivotX = bubble.sizePx / 2f
-                stack.pivotY = buttonY - bubbleParams.y + bubble.sizePx / 2f
+                stack.pivotX = blurMarginPx + bubble.sizePx / 2f
+                val buttonTop = if (pill.opensUp) expandedHeight - bubble.sizePx else 0
+                stack.pivotY = blurMarginPx + buttonTop + bubble.sizePx / 2f
+                blurStack(fraction)
             }
             if (!enter) doOnEnd { if (stackExiting) removeStack() }
             start()
         }
+    }
+
+    /** Blurs the stack by [STACK_MAX_BLUR_DP] at [fraction] 0, down to none at 1. API 33+ (see [blurMarginPx]). */
+    private fun blurStack(fraction: Float) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val radius = maxBlurPx * (1 - fraction)
+        // None under 1 px: a 0 radius is invalid, and a sharp stack shouldn't render through the effect.
+        stack.setRenderEffect(
+            if (radius < 1f) null else RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.DECAL)
+        )
+    }
+
+    /**
+     * Limits the bubble window's taps to the stack inside [blurMarginPx] (the window before the margin), so taps
+     * beside the bubble reach the app below. setTouchableRegion() requests a layout: only call it on a change.
+     */
+    private fun updateTouchRegion() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val rect = Rect(blurMarginPx, blurMarginPx, stack.width - blurMarginPx, stack.height - blurMarginPx)
+        if (rect == touchRect) return
+        stack.rootSurfaceControl?.setTouchableRegion(Region(rect)) ?: return
+        touchRect = rect
     }
 
     /** Also expands the pill while [BubbleStatus.LISTENING] and collapses it otherwise. */
@@ -420,14 +473,15 @@ class BubbleOverlay(
         val size = bubble.sizePx
         val area = screenArea()
         val visible = area.aboveIme()
-        bubbleParams.x = snappedX(side, size, area)
+        bubbleX = snappedX(side, size, area)
         buttonY = clamp(yForFraction(yFraction, size, area), visible.top, visible.bottom, size)
         placeStack()
     }
 
     /**
      * While the pill is visible, opens it down from the button at [buttonY], or up if it wouldn't fit above the
-     * IME/usable bottom; then lays out the stack and sets the window's y so the button stays at [buttonY].
+     * IME/usable bottom; then lays out the stack and sets the window's x and y so the button sits at [bubbleX] /
+     * [buttonY].
      */
     private fun placeStack() {
         val visible = pill.visibility == View.VISIBLE
@@ -444,7 +498,10 @@ class BubbleOverlay(
                 bottomMargin = if (up) pillMargin + bubble.shadowRoomPx else 0
             }
         }
-        bubbleParams.y = if (up) buttonY - (expandedHeight - bubble.sizePx) else buttonY
+        bubbleParams.x = bubbleX - blurMarginPx
+        val top = if (up) buttonY - (expandedHeight - bubble.sizePx) else buttonY
+        // Kept on screen: with FLAG_LAYOUT_NO_LIMITS the system no longer pushes a window above the top back down.
+        bubbleParams.y = top.coerceAtLeast(0) - blurMarginPx
     }
 
     // LEFT/RIGHT are deliberate: overlay coordinates are display coordinates, not layout direction.
@@ -461,7 +518,7 @@ class BubbleOverlay(
         }
         val placement = panelPlacement(
             side = side,
-            bubbleX = bubbleParams.x,
+            bubbleX = bubbleX,
             bubbleSize = bubble.sizePx,
             circleTop = buttonY + bubble.circleInsetPx,
             circleSize = bubble.circlePx,
@@ -519,7 +576,7 @@ class BubbleOverlay(
                     snapAnimator?.takeIf { it.isRunning }?.end()
                     downX = event.rawX
                     downY = event.rawY
-                    startX = bubbleParams.x
+                    startX = bubbleX
                     startY = buttonY
                     dragging = false
                     // While the pill is out, the button's margin on the pill's side (the gap) counts as the pill.
@@ -537,7 +594,7 @@ class BubbleOverlay(
                     if (dragging) {
                         val size = bubble.sizePx
                         val visible = screenArea().aboveIme()
-                        bubbleParams.x = clamp(startX + dx.roundToInt(), visible.left, visible.right, size)
+                        bubbleX = clamp(startX + dx.roundToInt(), visible.left, visible.right, size)
                         buttonY = clamp(startY + dy.roundToInt(), visible.top, visible.bottom, size)
                         placeStack()
                         updateWindows()
@@ -553,13 +610,14 @@ class BubbleOverlay(
     private fun snapToEdge() {
         val size = bubble.sizePx
         val area = screenArea()
-        side = nearestSide(bubbleParams.x, size, area)
+        side = nearestSide(bubbleX, size, area)
         yFraction = fractionForY(buttonY, size, area)
         onMoved(side, yFraction)
-        snapAnimator = ValueAnimator.ofInt(bubbleParams.x, snappedX(side, size, area)).apply {
+        snapAnimator = ValueAnimator.ofInt(bubbleX, snappedX(side, size, area)).apply {
             duration = SNAP_DURATION_MS
             addUpdateListener {
-                bubbleParams.x = it.animatedValue as Int
+                bubbleX = it.animatedValue as Int
+                placeStack()
                 updateWindows()
             }
             start()
@@ -592,9 +650,11 @@ class BubbleOverlay(
         const val PANEL_IN_MS = 250L
         const val PANEL_OUT_MS = 200L
         const val PANEL_MIN_SCALE = 0.92f
-        const val STACK_IN_MS = 150L
-        const val STACK_OUT_MS = 150L
-        const val STACK_MIN_SCALE = 0.6f
+        const val STACK_IN_MS = 200L
+        const val STACK_OUT_MS = 200L
+        const val STACK_MIN_SCALE = 0.85f
+        const val STACK_MAX_BLUR_DP = 16f
+        const val STACK_BLUR_MARGIN_DP = 16
         const val WRAP = FrameLayout.LayoutParams.WRAP_CONTENT
         val EMPHASIZED_DECELERATE = PathInterpolator(0.05f, 0.7f, 0.1f, 1f)
         val EMPHASIZED_ACCELERATE = PathInterpolator(0.3f, 0f, 0.8f, 0.15f)

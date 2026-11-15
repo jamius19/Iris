@@ -22,6 +22,15 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Re-show after focus loss mid-Finalizing restores spinner and panel without replayed animations.
 - Panel sliders apply live in another app; at 90 % width the panel stays on screen on both sides and in landscape.
 - TalkBack reads "Start / Cancel / Stop dictation" and double-tap works on the ✕ and the pill.
+- Show / hide (focus a field, then leave it): the bubble fades in blurred -> sharp and out sharp -> blurred with no
+  hard square edge and no sharp first or last frame; also while Listening (pill out), with the pill opening up near
+  the IME, and on both edges. Android 12 and below: fade + zoom only.
+- Android 13+: taps just beside the bubble and the pill (~16 dp) reach the app or keyboard below; the circle, ✕,
+  pill and gap still respond after expand / collapse, a flip, a drag, rotation and hide / show. The circle sits
+  where it did before, also at the screen edges and in landscape with a cutout; with no bottom bar (3-button nav in
+  landscape) it may sit ~6 dp lower at the bottom edge (accepted).
+- Android 13+, landscape, keyboard up, bubble near the top, Listening: the whole pill shows (not cut off at the top).
+- Rapid focus changes (hide mid-show, show mid-hide): the bubble turns back smoothly, never flashes sharp.
 
 ## VAD and Speed (real voice)
 - First and last words aren't clipped, incl. speaking right after the tap and stopping right after the last word.
