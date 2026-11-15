@@ -330,10 +330,10 @@ internal class BubbleView(context: Context) : View(context) {
     }
 
     private companion object {
-        const val RADIUS_DP = 20
+        const val RADIUS_DP = 18
         const val MARGIN_DP = 6
         const val SHADOW_ROOM_DP = 6
-        const val ICON_DP = 20
+        const val ICON_DP = 18
         const val SPINNER_STROKE_DP = 2.5f
         const val SPINNER_SWEEP = 270f
         const val MORPH_MS = 250L
@@ -347,7 +347,7 @@ internal class BubbleView(context: Context) : View(context) {
 
         /** The logo's stroke width, in path units. */
         const val WAVE_STROKE = 21f
-        const val WAVE_WIDTH_DP = 18f
+        const val WAVE_WIDTH_DP = 21f
         const val WAVE_IN_MS = 500L
 
         /** Matches BubbleOverlay's STACK_OUT_MS: the window is removed at its end. */

@@ -121,13 +121,13 @@ class BubbleOverlay(
         breakStrategy = Layout.BREAK_STRATEGY_SIMPLE
         hyphenationFrequency = Layout.HYPHENATION_FREQUENCY_NONE
         maxLines = liveLines
-        // Vertical padding makes one line exactly as tall as the bubble's circle.
+        // Vertical padding is hand-tuned; one line is taller than the bubble's circle.
         val padV = (16 * density).roundToInt()
         val padH = (16 * density).roundToInt()
         setPadding(padH, (padV / 1.5f).toInt(), padH, (padV / 1.5f).toInt())
         background = GradientDrawable().apply {
             setColor(context.getColor(R.color.panel_background))
-            cornerRadius = bubble.circlePx / 2.5f
+            cornerRadius = 16 * density
         }
     }
     private var panelText = ""
