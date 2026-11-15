@@ -6,7 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import dev.jamius.iris.ui.components.LocalRecheckUpdate
 import dev.jamius.iris.ui.components.LocalUpdateStatus
 import dev.jamius.iris.ui.components.Saver
 import dev.jamius.iris.ui.components.UpdateStatus
@@ -23,9 +27,16 @@ class MainActivity : ComponentActivity() {
         val saver = Saver(container.appScope)
         setContent {
             IrisTheme {
-                // Checked each time the app opens.
-                val update by produceState(UpdateStatus.CHECKING) { value = container.updateStatus() }
-                CompositionLocalProvider(LocalUpdateStatus provides update) {
+                // Checked each time the app opens and when "Up to date" is tapped (a new tap restarts the check).
+                var checks by remember { mutableIntStateOf(0) }
+                val update by produceState(UpdateStatus.CHECKING, checks) {
+                    value = UpdateStatus.CHECKING
+                    value = container.updateStatus()
+                }
+                CompositionLocalProvider(
+                    LocalUpdateStatus provides update,
+                    LocalRecheckUpdate provides { checks++ }
+                ) {
                     SettingsApp(
                         repository = container.settingsRepository,
                         saver = saver,

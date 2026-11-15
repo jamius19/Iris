@@ -14,6 +14,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -48,6 +49,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.LinkAnnotation
@@ -64,6 +66,9 @@ import dev.jamius.iris.ui.theme.IrisTheme
 enum class UpdateStatus { CHECKING, UP_TO_DATE, AVAILABLE, UNKNOWN }
 
 val LocalUpdateStatus = compositionLocalOf { UpdateStatus.UNKNOWN }
+
+/** Runs the update check again; called when the footer's "Up to date" is tapped. */
+val LocalRecheckUpdate = compositionLocalOf<() -> Unit> { {} }
 
 /**
  * A settings page: background, the logo (Home, [title] null) or a back chevron + title, [content] (items 15 dp
@@ -152,7 +157,16 @@ fun PageScaffold(title: String?, onBack: (() -> Unit)?, content: @Composable Col
                                 append(updateText)
                             }
                         }
-                        Text(status, type.footer, color = colors.muted)
+                        val recheck = LocalRecheckUpdate.current
+                        val modifier = if (update == UpdateStatus.UP_TO_DATE) {
+                            Modifier.clickable(role = Role.Button, onClickLabel = "Check for update") {
+                                focusManager.clearFocus()
+                                recheck()
+                            }
+                        } else {
+                            Modifier
+                        }
+                        Text(status, type.footer, modifier, color = colors.muted)
                     }
                 }
             }
