@@ -72,9 +72,9 @@ internal const val LANGUAGE_DETECTION_TIMEOUT_MS = 1_000L
  * @param audio cold flow at the given sample rate (Hz); each collection records a new session's audio.
  * @param stt the speech-to-text provider for a session's settings; picked once per session.
  * @param clock the [AudioChunk.readAtNanos] time base.
- * @param onFinalTranscript called with the final text of each successful session; returns the
- *   [DictationState.Done] to show. It runs inside the session (still Finalizing): cancelling the session cancels
- *   it, and its exceptions end in Error.
+ * @param onFinalTranscript called with the final text of each successful session (filler words removed and custom
+ *   words corrected, as the settings say); returns the [DictationState.Done] to show. It runs inside the session
+ *   (still Finalizing): cancelling the session cancels it, and its exceptions end in Error.
  * @param warmUpCleanup called with the session's settings as recording starts and again on stop, if cleanup is
  *   enabled, so the cleanup call finds a warm connection. Must return at once.
  * @param vadModel a new Silero stream (16 kHz frame -> speech probability) for each session with VAD on; it is only
@@ -225,14 +225,15 @@ class DictationController(
                         model,
                         config.activeSttLanguage,
                         config.sttTimeoutSeconds * 1000L,
-                        ::onPartial
+                        ::onPartial,
+                        config.activeCustomWords
                     )
                 }
                 val transcribedAt = clock()
                 // Read now: a transcript that arrives before the stop (the Gateway's early `finish`) has none, and a
                 // stop tapped later, during the hook, must not count.
                 val stop = stoppedAt
-                val text = withoutFillers(transcript, config)
+                val text = withCustomWords(withoutFillers(transcript, config), config)
                 if (text.isBlank()) {
                     DictationState.Error(NO_SPEECH)
                 } else {
@@ -286,6 +287,10 @@ class DictationController(
         val language = outputLanguage(config) ?: if (hasGatedFiller(text)) detectedLanguage(text) else null
         return removeFillerWords(text, language)
     }
+
+    /** [text] with words that sound like a custom word corrected, if the setting is on (see [correctCustomWords]). */
+    private fun withCustomWords(text: String, config: Settings): String =
+        if (config.correctSimilarWords) correctCustomWords(text, config.activeCustomWords) else text
 
     private suspend fun detectedLanguage(text: String): String? {
         val start = clock()

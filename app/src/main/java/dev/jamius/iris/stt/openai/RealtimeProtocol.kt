@@ -59,8 +59,32 @@ internal fun hasLiveText(model: String): Boolean = model.trim() in setOf("gpt-li
 /** [model] takes the `languages` array; the others take singular `language` (never both). */
 internal fun usesLanguageList(model: String): Boolean = model.trim() in setOf("gpt-transcribe", "gpt-live-transcribe")
 
-/** PCM16 mono 24 kHz input, no turn detection (gpt-live-transcribe supports no VAD; we commit on stop). */
-internal fun sessionUpdate(model: String, language: String): String = buildJsonObject {
+/** [model] takes custom words as `keywords` (an array; Realtime and file API, checked 2026-11-15). */
+internal fun usesKeywords(model: String): Boolean = model.trim() in setOf("gpt-transcribe", "gpt-live-transcribe")
+
+/**
+ * [model] takes custom words as a `prompt` ([glossaryPrompt]): whisper-1 and the gpt-4o(-mini)-transcribe models,
+ * not diarize (rejects a prompt) nor gpt-realtime-whisper (no prompt in Realtime sessions). Unknown ids get nothing.
+ */
+internal fun takesPrompt(model: String): Boolean {
+    val id = model.trim()
+    if (id == "whisper-1") return true
+    val gpt4o = id.startsWith("gpt-4o-transcribe") || id.startsWith("gpt-4o-mini-transcribe")
+    return gpt4o && "diarize" !in id
+}
+
+/** The `prompt` carrying custom words (whisper-1 reads a prompt as a list of terms). */
+internal fun glossaryPrompt(words: List<String>): String = "Glossary: " + words.joinToString(", ")
+
+/**
+ * PCM16 mono 24 kHz input, no turn detection (gpt-live-transcribe supports no VAD; we commit on stop). [words] go
+ * in as `keywords` or a `prompt`, as the model takes them ([usesKeywords], [takesPrompt]).
+ */
+internal fun sessionUpdate(
+    model: String,
+    language: String,
+    words: List<String> = emptyList(),
+): String = buildJsonObject {
     put("type", "session.update")
     putJsonObject("session") {
         put("type", "transcription")
@@ -76,6 +100,11 @@ internal fun sessionUpdate(model: String, language: String): String = buildJsonO
                         language.isBlank() -> Unit
                         usesLanguageList(model) -> putJsonArray("languages") { add(language) }
                         else -> put("language", language)
+                    }
+                    when {
+                        words.isEmpty() -> Unit
+                        usesKeywords(model) -> putJsonArray("keywords") { words.forEach { add(it) } }
+                        takesPrompt(model) -> put("prompt", glossaryPrompt(words))
                     }
                 }
                 put("turn_detection", JsonNull)

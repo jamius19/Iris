@@ -66,6 +66,8 @@ class VercelGatewaySpeechToText(
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        // Not sent: whether the Gateway forwards a biasing option is unverified.
+        customWords: List<String>,
     ): String {
         val key = apiKey()?.takeIf { it.isNotBlank() }
             ?: throw SttException("Add your Vercel AI Gateway API key in Iris settings")

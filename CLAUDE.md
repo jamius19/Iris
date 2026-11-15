@@ -32,13 +32,13 @@ decides which audio is sent; "Speed" time-stretches it to cut billed audio.
 | `audio` | `AudioRecorder` (PCM16 mono), `SileroVad`, `SpeechGate` (pure VAD gate), `timeStretched` (Sonic) |
 | `stt` | `SpeechToTextProvider`; `stt.openai` / `vercel` / `deepgram` / `soniox` / `ondevice`; `Wav.kt` (uploads) |
 | `cleanup` | `CleanupProvider`; `cleanup.vercel` / `openrouter` / `compatible` (user-added OpenAI-compatible) |
-| `dictation` | `DictationController` (session state machine), `Statistics`, `FillerWords`, `LanguageDetector` |
+| `dictation` | `DictationController` (state machine), `Statistics`, `FillerWords`, `CustomWords`, `LanguageDetector` |
 | `overlay` | `IrisAccessibilityService`, `BubbleOverlay` (bubble + pill + text panel), `TextInsertion` |
 
 Session flow (`DictationController`, main thread): `Idle -> Listening -> Finalizing -> Done | Error -> Idle`.
 Audio pipeline: `AudioRecorder.chunks(rate)` (50 ms chunks) -> `SpeechGate` (VAD) -> `transformWhile` (level, stop
 check, keep-alive) -> `onCompletion` (no speech check) -> `timeStretched` -> `stt.transcribe` -> filler removal ->
-`IrisAccessibilityService.onFinalTranscript` (cleanup + insertion) -> `Statistics`.
+custom words -> `IrisAccessibilityService.onFinalTranscript` (cleanup + insertion) -> `Statistics`.
 
 Only two abstractions: `SpeechToTextProvider` and `CleanupProvider`. Provider choice is
 `AppContainer.speechToText(settings)` / `cleanup(settings)`, not a router. A new provider is a new implementation.
@@ -86,6 +86,9 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
   `language_hints_strict` only when the catalogue says the model supports it (else a 400).
 - **OpenAI realtime**: `turn_detection: null`; `languages: [code]` for `gpt-transcribe` / `gpt-live-transcribe`,
   singular `language` for the others, never both. A commit needs >= 100 ms of audio (padded with silence).
+- **Custom words** are normalised on save AND on read (no `<`, `>`, CR, LF; <= 100 entries x 60 chars): OpenAI
+  rejects those characters and the cleanup glossary's tags rely on it. Providers get `Settings.activeCustomWords`
+  (empty while the toggle is off). Deepgram `keyterm` is Nova-3 only, within an estimated token budget.
 - **WebSocket warm-up** must go through an HTTP/1.1 client derived from the socket's client, or OkHttp won't
   reuse the connection.
 - **Cleanup timeout** uses `withTimeoutOrNull`, not `withTimeout` (its exception is a `CancellationException` and
@@ -139,5 +142,5 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
 
 ## Status
 CP1-CP18 are done (settings, overlay, OpenAI/Gateway/Deepgram/Soniox STT, VAD, speed-up, cleanup providers,
-settings redesign, on-device STT incl. streaming, statistics, filler words), plus backup and restore. Real-voice
-device checks are still pending for CP6 onwards.
+settings redesign, on-device STT incl. streaming, statistics, filler words), plus backup and restore and custom
+words. Real-voice device checks are still pending for CP6 onwards.

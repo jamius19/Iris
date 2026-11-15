@@ -76,6 +76,7 @@ class DictationControllerTest {
         var model = ""
         var language = ""
         var timeoutMs = 0L
+        var customWords: List<String>? = null
         val received = mutableListOf<ByteArray>()
 
         override fun sampleRate(model: String) = rate
@@ -88,11 +89,13 @@ class DictationControllerTest {
             language: String,
             timeoutMs: Long,
             onPartial: (String) -> Unit,
+            customWords: List<String>,
         ): String {
             calls++
             this.model = model
             this.language = language
             this.timeoutMs = timeoutMs
+            this.customWords = customWords
             var chunks = 0
             audio.collect {
                 received += it
@@ -297,6 +300,7 @@ class DictationControllerTest {
                 language: String,
                 timeoutMs: Long,
                 onPartial: (String) -> Unit,
+                customWords: List<String>,
             ): String {
                 audio.collect { if (++sent == 1) delay(1_000) } // A stall: chunks queue up meanwhile.
                 return "Hi"
@@ -418,6 +422,7 @@ class DictationControllerTest {
                     language: String,
                     timeoutMs: Long,
                     onPartial: (String) -> Unit,
+                    customWords: List<String>,
                 ): String {
                     var chunks = 0
                     audio.collect { if (++chunks == 2) throw SttException("OpenAI error: Boom") }
@@ -1006,6 +1011,7 @@ class DictationControllerTest {
                 language: String,
                 timeoutMs: Long,
                 onPartial: (String) -> Unit,
+                customWords: List<String>,
             ): String {
                 audio.take(5).collect()
                 return "Hi"
@@ -1195,6 +1201,35 @@ class DictationControllerTest {
         advanceTimeBy(1)
         assertEquals(DictationState.Done("um hello"), controller.state.value)
         assertEquals(listOf("um hello"), finals)
+    }
+
+    private val withWords = openAi.copy(sttLanguage = "en", customWordsEnabled = true, customWords = listOf("Deepgram"))
+
+    @Test
+    fun customWordsAreCorrectedAfterFillerRemoval() = runTest {
+        val stt = FakeStt { "deep um gram works" }
+        dictate(controller(stt, settings = withWords))
+
+        assertEquals(listOf("Deepgram works"), finals)
+        assertEquals(listOf("Deepgram"), stt.customWords)
+    }
+
+    @Test
+    fun customWordsOffLeavesTheTextAndSendsNoWords() = runTest {
+        val stt = FakeStt { "deep gram works" }
+        dictate(controller(stt, settings = withWords.copy(customWordsEnabled = false)))
+
+        assertEquals(listOf("deep gram works"), finals)
+        assertEquals(emptyList<String>(), stt.customWords)
+    }
+
+    @Test
+    fun correctionOffLeavesTheTextButStillSendsTheWords() = runTest {
+        val stt = FakeStt { "deep gram works" }
+        dictate(controller(stt, settings = withWords.copy(correctSimilarWords = false)))
+
+        assertEquals(listOf("deep gram works"), finals)
+        assertEquals(listOf("Deepgram"), stt.customWords)
     }
 
     private companion object {

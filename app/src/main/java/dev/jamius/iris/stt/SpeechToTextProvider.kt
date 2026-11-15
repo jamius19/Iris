@@ -49,6 +49,8 @@ interface SpeechToTextProvider {
      *
      * @param language ISO-639-1 code, or blank to auto-detect (Soniox: a comma-separated list).
      * @param timeoutMs how long to wait for the final transcript once all audio is sent.
+     * @param customWords terms to bias recognition toward (normalised Custom Words); providers without a supported
+     *   option ignore it.
      */
     suspend fun transcribe(
         audio: Flow<ByteArray>,
@@ -56,6 +58,7 @@ interface SpeechToTextProvider {
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String> = emptyList(),
     ): String
 
     /**

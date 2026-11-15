@@ -84,6 +84,7 @@ fun TranscriptionPage(
                     optionLabel = ::sttProviderLabel,
                     onSave = { repository.setSttProvider(it) },
                     saver = saver,
+                    helper = customWordsSttNote(settings),
                     spacing = 9.dp,
                     optionIcon = { ProviderIconBox { BrandIcon(sttProviderIcon(it)) } }
                 )

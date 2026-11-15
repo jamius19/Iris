@@ -95,6 +95,19 @@ class SettingsRepository(
         dataStore.edit { it[Keys.REMOVE_FILLER_WORDS] = enabled }
     }
 
+    suspend fun setCustomWordsEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.CUSTOM_WORDS_ENABLED] = enabled }
+    }
+
+    suspend fun setCorrectSimilarWords(enabled: Boolean) {
+        dataStore.edit { it[Keys.CORRECT_SIMILAR_WORDS] = enabled }
+    }
+
+    /** [text]: one word or phrase per line, stored normalised ([normalizeCustomWords]). */
+    suspend fun setCustomWords(text: String) {
+        dataStore.edit { it[Keys.CUSTOM_WORDS] = encodeCustomWords(normalizeCustomWords(text.lines())) }
+    }
+
     suspend fun setCleanupEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.CLEANUP_ENABLED] = enabled }
     }
@@ -290,6 +303,9 @@ internal object Keys {
     val VAD_ENABLED = booleanPreferencesKey("vad_enabled")
     val STT_SPEED_PERCENT = intPreferencesKey("stt_speed_percent")
     val REMOVE_FILLER_WORDS = booleanPreferencesKey("remove_filler_words")
+    val CUSTOM_WORDS_ENABLED = booleanPreferencesKey("custom_words_enabled")
+    val CUSTOM_WORDS = stringPreferencesKey("custom_words")
+    val CORRECT_SIMILAR_WORDS = booleanPreferencesKey("correct_similar_words")
     val CLEANUP_ENABLED = booleanPreferencesKey("cleanup_enabled")
     val CLEANUP_PROVIDER_ID = stringPreferencesKey("cleanup_provider_id")
     val CLEANUP_MODEL = stringPreferencesKey("cleanup_model")
@@ -317,6 +333,10 @@ internal fun decodePrompts(encoded: String): List<CleanupPrompt> = json.decodeFr
 internal fun encodeCustomProviders(providers: List<CustomCleanupProvider>): String = json.encodeToString(providers)
 
 internal fun decodeCustomProviders(encoded: String): List<CustomCleanupProvider> = json.decodeFromString(encoded)
+
+internal fun encodeCustomWords(words: List<String>): String = json.encodeToString(words)
+
+internal fun decodeCustomWords(encoded: String): List<String> = json.decodeFromString(encoded)
 
 /** Stored custom cleanup providers; none if never saved. */
 internal fun Preferences.customCleanupProviders(): List<CustomCleanupProvider> =
@@ -352,6 +372,10 @@ internal fun Preferences.toSettings(storedSecrets: Set<Secret>): Settings {
         vadEnabled = this[Keys.VAD_ENABLED] ?: true,
         sttSpeedPercent = this[Keys.STT_SPEED_PERCENT] ?: Settings.DEFAULT_STT_SPEED_PERCENT,
         removeFillerWords = this[Keys.REMOVE_FILLER_WORDS] ?: true,
+        customWordsEnabled = this[Keys.CUSTOM_WORDS_ENABLED] ?: false,
+        // Normalised on read too: a restored backup may break the rules providers rely on.
+        customWords = this[Keys.CUSTOM_WORDS]?.let(::decodeCustomWords)?.let(::normalizeCustomWords).orEmpty(),
+        correctSimilarWords = this[Keys.CORRECT_SIMILAR_WORDS] ?: true,
         cleanupEnabled = this[Keys.CLEANUP_ENABLED] ?: false,
         cleanupProviderId = cleanupProviderId,
         cleanupModel = this[Keys.CLEANUP_MODEL] ?: Settings.DEFAULT_CLEANUP_MODEL,

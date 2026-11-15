@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import dev.jamius.iris.R
 import dev.jamius.iris.ui.theme.IrisTheme
 
-/** A Home card that opens a page: icon, title, subtitle; the whole card is the button. */
+/** A card that opens a page: icon, title, subtitle; the whole card is the button. */
 @Composable
 fun NavCard(@DrawableRes icon: Int, title: String, subtitle: String, onClick: () -> Unit) {
     Card(verticalPadding = 15.dp, onClick = onClick, onClickLabel = "Open") {

@@ -66,6 +66,7 @@ class SonioxSpeechToText(
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String>,
     ): String {
         val key = apiKey()?.takeIf { it.isNotBlank() }
             ?: throw SttException("Add your Soniox API key in Iris settings")
@@ -89,7 +90,7 @@ class SonioxSpeechToText(
                     if (started) return
                     started = true
                     val strict = info?.await()?.supportsLanguageHintsStrict == true
-                    socket.send(sonioxStartMessage(model, hints, strict))
+                    socket.send(sonioxStartMessage(model, hints, strict, customWords))
                 }
                 // Started at the first chunk, so the mic opens at once. OkHttp queues messages until the handshake
                 // completes. An empty binary frame is only an empty chunk: skipped.

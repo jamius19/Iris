@@ -67,6 +67,8 @@ class OnDeviceSpeechToText(
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        // Not used: sherpa-onnx hotwords are a follow-up.
+        customWords: List<String>,
     ): String {
         val m = onDeviceModel(model)
         // Before collecting: the mic never opens without the model.

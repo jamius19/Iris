@@ -146,6 +146,20 @@ class OpenAiRealtimeSpeechToTextTest {
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)
+    fun customWordsGoInTheSessionUpdate() = runBlocking {
+        upgrade(onMessage = { socket, text ->
+            if (type(text) == "input_audio_buffer.commit") {
+                socket.send(COMMITTED)
+                socket.send(completed(""))
+            }
+        })
+
+        stt().transcribe(flowOf(byteArrayOf(1, 2)), "gpt-live-transcribe", "", TIMEOUT_MS, {}, listOf("Iris"))
+
+        assertEquals(sessionUpdate("gpt-live-transcribe", "", listOf("Iris")), received.first())
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
     fun fullAudioIsNotPadded() = runBlocking {
         upgrade(onMessage = { socket, text ->
             if (type(text) == "input_audio_buffer.commit") {

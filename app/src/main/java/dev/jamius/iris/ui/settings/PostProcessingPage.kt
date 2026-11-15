@@ -70,6 +70,7 @@ import dev.jamius.iris.ui.components.Icon
 import dev.jamius.iris.ui.components.IconAction
 import dev.jamius.iris.ui.components.IconRow
 import dev.jamius.iris.ui.components.ModelCombobox
+import dev.jamius.iris.ui.components.NavCard
 import dev.jamius.iris.ui.components.PageScaffold
 import dev.jamius.iris.ui.components.ProviderIconBox
 import dev.jamius.iris.ui.components.Saver
@@ -86,10 +87,10 @@ import dev.jamius.iris.ui.theme.IrisTheme
 import java.util.UUID
 
 /**
- * Post Processing Settings: the Remove Filler Words switch, the AI Cleanup switch, then (dimmed while cleanup is off,
- * still editable) the provider (plus a new custom one), its key, model, reasoning level, timeout and provider options,
- * and the prompts. A new custom provider is an in-memory draft until saved (never used for cleanup); picking another
- * provider or leaving the page discards it.
+ * Post Processing Settings: the Remove Filler Words switch, the Custom Words card ([onOpenCustomWords]), the AI
+ * Cleanup switch, then (dimmed while cleanup is off, still editable) the provider (plus a new custom one), its key,
+ * model, reasoning level, timeout and provider options, and the prompts. A new custom provider is an in-memory draft
+ * until saved (never used for cleanup); picking another provider or leaving the page discards it.
  */
 @Composable
 fun PostProcessingPage(
@@ -98,6 +99,7 @@ fun PostProcessingPage(
     saver: Saver,
     catalogs: ModelCatalogs,
     favicons: Favicons,
+    onOpenCustomWords: () -> Unit,
     onBack: () -> Unit,
 ) {
     val colors = IrisTheme.colors
@@ -124,6 +126,12 @@ fun PostProcessingPage(
                 icon = R.drawable.lucide_eraser
             )
         }
+        NavCard(
+            R.drawable.lucide_spell_check,
+            "Custom Words",
+            "Names and terms Iris should spell right",
+            onClick = onOpenCustomWords
+        )
         Card(verticalPadding = 15.dp) {
             SwitchRow(
                 title = "AI Cleanup",

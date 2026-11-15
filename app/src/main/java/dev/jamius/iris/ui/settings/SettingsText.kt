@@ -193,6 +193,38 @@ fun newPromptName(existing: List<String>): String {
 /** Why [text] can't be saved as provider options (blank is fine: it clears them), or null. */
 fun providerOptionsError(text: String): String? = runCatching { parseProviderOptions(text) }.exceptionOrNull()?.message
 
+/**
+ * Why the Custom Words [text] (one per line) can't be saved, or null: a line over the length cap, or more distinct
+ * entries than the count cap. Blank lines and case-insensitive duplicates don't count (they're dropped on save).
+ */
+fun customWordsError(text: String): String? {
+    val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+    if (lines.any { it.length > Settings.MAX_CUSTOM_WORD_LENGTH }) {
+        return "Keep each line to ${Settings.MAX_CUSTOM_WORD_LENGTH} characters or fewer."
+    }
+    val count = lines.distinctBy { it.lowercase() }.size
+    if (count > Settings.MAX_CUSTOM_WORDS) {
+        return "Up to ${Settings.MAX_CUSTOM_WORDS} words or phrases ($count entered)."
+    }
+    return null
+}
+
+/** The Custom Words field's helper; on device, also why they help less there. */
+fun customWordsHelper(onDevice: Boolean): String {
+    val limits = "One per line, up to ${Settings.MAX_CUSTOM_WORDS}, ${Settings.MAX_CUSTOM_WORD_LENGTH} characters each."
+    if (!onDevice) return limits
+    return "$limits On-device models don't get them, so they help less there: only the correction and AI Cleanup " +
+        "use them."
+}
+
+/** The Transcription Provider note while Custom Words are in use (on, with words), else null. */
+fun customWordsSttNote(settings: Settings): String? = when {
+    settings.activeCustomWords.isEmpty() -> null
+    settings.sttOnDevice -> "Custom Words are on but aren't sent to on-device models."
+    settings.sttGateway -> "Custom Words are on but aren't sent to Vercel AI Gateway."
+    else -> "Custom Words are on and may increase charges for some providers."
+}
+
 private const val NEW_PROMPT = "New prompt"
 
 /** Vendor pages that exist on dontkillmyapp.com (an unknown slug is a 404; "honor" is one). */

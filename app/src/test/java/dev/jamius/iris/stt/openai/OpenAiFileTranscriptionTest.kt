@@ -19,6 +19,7 @@ import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
 import okhttp3.Call
 import okhttp3.EventListener
+import okhttp3.MultipartBody
 import okhttp3.MultipartReader
 import okhttp3.OkHttpClient
 import okio.Buffer
@@ -64,7 +65,8 @@ class OpenAiFileTranscriptionTest {
         model: String = "custom-transcribe",
         language: String = "",
         timeoutMs: Long = TIMEOUT_MS,
-    ) = transcribe(audio, model, language, timeoutMs) { error("No live text") }
+        words: List<String> = emptyList(),
+    ) = transcribe(audio, model, language, timeoutMs, { error("No live text") }, words)
 
     private fun failure(block: suspend () -> Unit): SttException =
         assertThrows(SttException::class.java) { runBlocking { block() } }
@@ -125,6 +127,41 @@ class OpenAiFileTranscriptionTest {
 
         val parts = parts(server.takeRequest())
         assertEquals(listOf("file", "model", "response_format"), parts.keys.toList())
+    }
+
+    /** The form's fields in order: name to text. */
+    private fun fields(form: MultipartBody): List<Pair<String, String>> = form.parts.map { part ->
+        val name = part.headers!!["Content-Disposition"]!!.substringAfter("name=\"").substringBefore('"')
+        name to Buffer().also { part.body.writeTo(it) }.readUtf8()
+    }
+
+    @Test
+    fun customWordsGoAsKeywordsAPromptOrNothing() {
+        val wav = byteArrayOf(1)
+        val words = listOf("Deepgram", "Jamius Siam")
+        assertEquals(
+            listOf("keywords[]" to "Deepgram", "keywords[]" to "Jamius Siam"),
+            fields(transcriptionForm(wav, "gpt-transcribe", "", words)).drop(3)
+        )
+        listOf("whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe").forEach {
+            assertEquals(
+                listOf("prompt" to "Glossary: Deepgram, Jamius Siam"),
+                fields(transcriptionForm(wav, it, "", words)).drop(3)
+            )
+        }
+        listOf("gpt-4o-transcribe-diarize", "custom-transcribe").forEach {
+            assertEquals(3, fields(transcriptionForm(wav, it, "", words)).size)
+        }
+        assertEquals(3, fields(transcriptionForm(wav, "whisper-1", "", emptyList())).size)
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
+    fun transcribeSendsTheCustomWords() = runBlocking {
+        respond(200, """{"text":"Hi"}""")
+
+        stt().run(model = "gpt-4o-transcribe-2025-03-20", words = listOf("Soniox"))
+
+        assertEquals("Glossary: Soniox", String(parts(server.takeRequest()).getValue("prompt").third))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

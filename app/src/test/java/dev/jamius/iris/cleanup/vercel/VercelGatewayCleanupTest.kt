@@ -7,6 +7,7 @@ package dev.jamius.iris.cleanup.vercel
 
 import dev.jamius.iris.cleanup.CleanupException
 import dev.jamius.iris.cleanup.GatewayModel
+import dev.jamius.iris.cleanup.withGlossary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
@@ -122,6 +123,20 @@ class VercelGatewayCleanupTest {
         )
         assertEquals(expectedFormat, body["response_format"])
         assertFalse("providerOptions" in body)
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
+    fun glossaryGoesBetweenThePromptAndTheFraming() = runBlocking {
+        respondCompletion("""{"text":"Hi."}""")
+        val prompt = withGlossary("Clean it.", listOf("Deepgram"))
+
+        cleanup().cleanup("um hello world", prompt, "openai/gpt-6-luna", "low", null)
+
+        val body = Json.parseToJsonElement(server.takeRequest().body!!.utf8()).jsonObject
+        val system = body["messages"]!!.jsonArray[0].jsonObject.string("content")
+        assertEquals("$prompt\n\n$TRANSCRIPT_FRAMING", system)
+        assertTrue(system.startsWith("Clean it.\n\n"))
+        assertTrue("<custom_words>\nDeepgram\n</custom_words>\n\n$TRANSCRIPT_FRAMING" in system)
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

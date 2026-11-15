@@ -5,10 +5,12 @@
 
 package dev.jamius.iris.ui.settings
 
+import androidx.datastore.preferences.core.emptyPreferences
 import dev.jamius.iris.data.settings.CustomCleanupProvider
 import dev.jamius.iris.data.settings.Settings
 import dev.jamius.iris.data.settings.cleanupProviderLabel
 import dev.jamius.iris.data.settings.sttProviderLabel
+import dev.jamius.iris.data.settings.toSettings
 import dev.jamius.iris.stt.ondevice.SpeedVerdict
 import dev.jamius.iris.stt.ondevice.onDeviceModel
 import dev.jamius.iris.stt.ondevice.speedVerdict
@@ -262,5 +264,47 @@ class SettingsTextTest {
         assertEquals("https://dontkillmyapp.com/?app=Iris", dontKillMyAppUrl("HONOR"))
         assertEquals("https://dontkillmyapp.com/?app=Iris", dontKillMyAppUrl("unknown"))
         assertEquals("https://dontkillmyapp.com/?app=Iris", dontKillMyAppUrl(""))
+    }
+
+    @Test
+    fun customWordsErrors() {
+        val hundred = (1..100).joinToString("\n") { "w$it" }
+        assertNull(customWordsError(hundred))
+        assertEquals("Up to 100 words or phrases (101 entered).", customWordsError("$hundred\nw101"))
+        // Blank lines and case-insensitive duplicates don't count.
+        assertNull(customWordsError("$hundred\n\n  \nW1\nw2 "))
+        assertNull(customWordsError("x".repeat(60)))
+        assertEquals("Keep each line to 60 characters or fewer.", customWordsError("ok\n" + "x".repeat(61)))
+        assertNull(customWordsError(""))
+    }
+
+    @Test
+    fun customWordsHelperTextNamesOnDeviceLimits() {
+        assertEquals("One per line, up to 100, 60 characters each.", customWordsHelper(onDevice = false))
+        assertEquals(
+            "One per line, up to 100, 60 characters each. On-device models don't get them, so they help less " +
+                "there: only the correction and AI Cleanup use them.",
+            customWordsHelper(onDevice = true)
+        )
+    }
+
+    @Test
+    fun customWordsSttNoteFollowsTheProvider() {
+        val on = emptyPreferences().toSettings(emptySet())
+            .copy(customWordsEnabled = true, customWords = listOf("Deepgram"))
+
+        assertNull(customWordsSttNote(on.copy(customWordsEnabled = false)))
+        assertNull(customWordsSttNote(on.copy(customWords = emptyList())))
+        assertEquals("Custom Words are on but aren't sent to on-device models.", customWordsSttNote(on))
+        assertEquals(
+            "Custom Words are on but aren't sent to Vercel AI Gateway.",
+            customWordsSttNote(on.copy(sttProviderId = Settings.STT_PROVIDER_VERCEL_GATEWAY))
+        )
+        for (id in listOf(Settings.STT_PROVIDER_OPENAI, Settings.STT_PROVIDER_DEEPGRAM, Settings.STT_PROVIDER_SONIOX)) {
+            assertEquals(
+                "Custom Words are on and may increase charges for some providers.",
+                customWordsSttNote(on.copy(sttProviderId = id))
+            )
+        }
     }
 }

@@ -113,3 +113,20 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Rotation while Creating… / Restoring…: no message; a backup leaves no file, a restore still completes.
 - TalkBack: both "Password" fields, "Show Password" / "Hide Password", the selected file name, buttons and outcome
   text are read.
+
+## Custom Words (real voice)
+- A name the provider normally misspells comes out right on OpenAI (`gpt-live-transcribe` and `whisper-1`),
+  Deepgram `nova-3` streaming and upload, Soniox `stt-rt-v6` and async.
+- Deepgram with 100 long phrases doesn't fail (token budget; the log shows the dropped count); nova-2 still works.
+- An on-device dictation gets the fuzzy fix ("sonics" -> "Soniox" with Soniox in the list).
+- AI Cleanup keeps a custom spelling.
+- Master off sends nothing (provider logs / usage show no keyterms, keywords, prompt or context).
+- Settings: Post Processing -> Custom Words, back (button and predictive gesture) returns to Post Processing, then
+  Home; the over-60-characters and over-100 errors show and nothing is saved; the on-device helper; the
+  Transcription Provider note per provider (cloud, Gateway, on device) and gone with the toggle off or no words.
+- Post Processing with the prompt field focused and edited, tap the Custom Words card: the edit is saved and the
+  keyboard closes.
+- `whisper-1` with Skip silence off and one short word dictated: the "Glossary:" prompt is not returned as the
+  transcript.
+- A 5 min dictation with 100 custom words: no visible stall at stop (the correction runs on the main thread).
+- R8 release build on an arm64 phone launches and corrects (stdlib calls in `CustomWords.kt`, `Kt__*` rule).

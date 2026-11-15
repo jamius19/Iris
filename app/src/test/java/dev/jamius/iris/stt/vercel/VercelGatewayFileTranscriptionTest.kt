@@ -64,7 +64,7 @@ class VercelGatewayFileTranscriptionTest {
         model: String = MODEL,
         language: String = "",
         timeoutMs: Long = TIMEOUT_MS,
-    ) = transcribe(audio, model, language, timeoutMs) { error("No live text") }
+    ) = transcribe(audio, model, language, timeoutMs, { error("No live text") })
 
     private fun failure(block: suspend () -> Unit): SttException =
         assertThrows(SttException::class.java) { runBlocking { block() } }

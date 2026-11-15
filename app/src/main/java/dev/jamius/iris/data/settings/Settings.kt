@@ -77,6 +77,12 @@ data class Settings(
     val sttSpeedPercent: Int,
     /** Remove filler words (uh, hmm; um/ah/eh, äh, euh only with the language known) from the final transcript. */
     val removeFillerWords: Boolean,
+    /** Master toggle of Custom Words: biasing, the cleanup glossary and the correction (see [activeCustomWords]). */
+    val customWordsEnabled: Boolean,
+    /** The Custom Words list, normalised ([normalizeCustomWords]), in the user's order. */
+    val customWords: List<String>,
+    /** Fix words in the final transcript that sound like a custom word (off = no in-app change). */
+    val correctSimilarWords: Boolean,
     val cleanupEnabled: Boolean,
     val cleanupProviderId: String,
     /** The Vercel AI Gateway cleanup model. */
@@ -139,6 +145,10 @@ data class Settings(
     /** The language setting the selected provider uses: Soniox has its own ([sonioxLanguages]). */
     val activeSttLanguage: String
         get() = if (sttSoniox) sonioxLanguages else sttLanguage
+
+    /** The custom words providers and the correction get: [customWords] while enabled, else none. */
+    val activeCustomWords: List<String>
+        get() = if (customWordsEnabled) customWords else emptyList()
 
     /** The selected speech-to-text provider's API key is set (On device has none: always true). */
     val sttKeySet: Boolean
@@ -221,6 +231,9 @@ data class Settings(
         val DEFAULT_BUBBLE_SIDE = BubbleSide.RIGHT
         const val DEFAULT_BUBBLE_Y_FRACTION = 0.4f
 
+        const val MAX_CUSTOM_WORDS = 100
+        const val MAX_CUSTOM_WORD_LENGTH = 60
+
         const val DEFAULT_PANEL_LINES = 3
         val PANEL_LINES_RANGE = 1..6
         const val DEFAULT_PANEL_WIDTH_PERCENT = 50
@@ -238,6 +251,20 @@ data class Settings(
         )
     }
 }
+
+private val CUSTOM_WORD_REMOVED = Regex("[<>\\r\\n]")
+private val WHITESPACE = Regex("\\s+")
+
+/**
+ * Custom words as providers may receive them: `<`, `>`, CR and LF removed, whitespace collapsed, trimmed; blanks,
+ * entries over [Settings.MAX_CUSTOM_WORD_LENGTH] and case-insensitive duplicates (first kept) dropped; at most
+ * [Settings.MAX_CUSTOM_WORDS].
+ */
+fun normalizeCustomWords(words: List<String>): List<String> = words
+    .map { it.replace(CUSTOM_WORD_REMOVED, "").replace(WHITESPACE, " ").trim() }
+    .filter { it.isNotEmpty() && it.length <= Settings.MAX_CUSTOM_WORD_LENGTH }
+    .distinctBy { it.lowercase() }
+    .take(Settings.MAX_CUSTOM_WORDS)
 
 fun sttProviderLabel(id: String): String = when (id) {
     Settings.STT_PROVIDER_ON_DEVICE -> "On device"

@@ -58,6 +58,7 @@ class OpenAiRealtimeSpeechToText(
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String>,
     ): String {
         val key = apiKey()?.takeIf { it.isNotBlank() }
             ?: throw SttException("Add your OpenAI API key in Iris settings")
@@ -70,7 +71,7 @@ class OpenAiRealtimeSpeechToText(
             val text = coroutineScope {
                 val final = async { awaitFinal(events, onPartial) }
                 // OkHttp queues messages until the handshake completes.
-                socket.send(sessionUpdate(model, language))
+                socket.send(sessionUpdate(model, language, customWords))
                 var sentBytes = 0
                 audio.collect {
                     socket.send(appendAudio(it))
