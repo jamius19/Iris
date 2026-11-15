@@ -100,7 +100,9 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
   `FLAG_LAYOUT_NO_LIMITS`), with taps limited to the content by `setTouchableRegion`. Position by
   `bubbleX` / `buttonY` (the button); `bubbleParams.x/y` is the window, not the button.
 - **Insertion quirks**: apps may report a placeholder as text with selection -1 (WhatsApp): paste instead of
-  `SET_TEXT`. A keyboard-only field (ChatGPT) needs the node tree walked once to find the editable node.
+  `SET_TEXT`. A keyboard-only field (ChatGPT) needs the node tree walked once to find the editable node. Google
+  Keep shows `SET_TEXT` text but never puts it in its note (Enter breaks, the text is gone on leaving): apps in
+  `PASTE_PACKAGES` (`needsPaste`) get a paste first.
 - **Inter weights**: build fonts with `InterFont` (platform `Font.Builder`), not Compose's `variationSettings`
   (HyperOS draws every weight at 400).
 - **Regex on Android**: `UNICODE_CHARACTER_CLASS` throws. Use explicit `\p{L}\p{N}` lookarounds.

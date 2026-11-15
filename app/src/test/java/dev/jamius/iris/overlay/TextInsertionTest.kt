@@ -145,4 +145,11 @@ class TextInsertionTest {
             doneNotice("Cleanup timed out", targetFocused = true, insertion = null)
         )
     }
+
+    @Test
+    fun `only Google Keep needs a paste instead of SET_TEXT`() {
+        assertEquals(true, needsPaste("com.google.android.keep"))
+        assertEquals(false, needsPaste("com.whatsapp"))
+        assertEquals(false, needsPaste(null))
+    }
 }

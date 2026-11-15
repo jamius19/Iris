@@ -73,9 +73,10 @@ internal fun doneNotice(cleanupError: String?, targetFocused: Boolean, insertion
  * SET_TEXT, puts [text] (spaced as for SET_TEXT) on the clipboard and pastes it. An editable [node] with an invalid
  * selection first gets a paste of [text] as is: its text can't be trusted (WhatsApp's empty box reports its
  * placeholder "Message" as text, with no hint and selection -1..-1), and a paste lands at the app's real cursor; if
- * that paste fails, the steps above follow. A non-editable [node] (the keyboard is open, but the field isn't
- * reported as editable) only gets the paste of [text] as is. Without a live node (null or stale), or if the paste
- * fails too, [text] is left on the clipboard: [Insertion.COPIED].
+ * that paste fails, the steps above follow. An app that [needsPaste] gets the paste before SET_TEXT. A non-editable
+ * [node] (the keyboard is open, but the field isn't reported as editable) only gets the paste of [text] as is.
+ * Without a live node (null or stale), or if the paste fails too, [text] is left on the clipboard:
+ * [Insertion.COPIED].
  */
 internal fun insertText(context: Context, node: AccessibilityNodeInfo?, text: String): Insertion {
     if (node != null && node.refresh()) {
@@ -85,6 +86,7 @@ internal fun insertText(context: Context, node: AccessibilityNodeInfo?, text: St
             val end = node.textSelectionEnd
             if (!isValidSelection(current, start, end) && paste(context, node, text)) return Insertion.INSERTED
             val merged = mergeInsertion(current, start, end, text)
+            if (needsPaste(node.packageName) && paste(context, node, merged.insertion)) return Insertion.INSERTED
             if (setText(node, merged)) return Insertion.INSERTED
             merged.insertion
         } else {
@@ -95,6 +97,15 @@ internal fun insertText(context: Context, node: AccessibilityNodeInfo?, text: St
     copyToClipboard(context, text)
     return Insertion.COPIED
 }
+
+/**
+ * True for apps whose editor keeps its own document and ignores `ACTION_SET_TEXT`: the text shows, but the app's
+ * document never gets it (Google Keep: Enter and typing then act on the old text, and the dictation is gone after
+ * leaving the note). A paste goes through the editor's normal edit path.
+ */
+internal fun needsPaste(packageName: CharSequence?): Boolean = packageName?.toString() in PASTE_PACKAGES
+
+private val PASTE_PACKAGES = setOf("com.google.android.keep")
 
 private fun paste(context: Context, node: AccessibilityNodeInfo, text: String): Boolean {
     copyToClipboard(context, text)

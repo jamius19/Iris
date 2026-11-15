@@ -11,6 +11,8 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - A field that rejects `ACTION_SET_TEXT` gets the text via clipboard + paste.
 - Empty WhatsApp / Gmail box: no placeholder ("Message") in the inserted text.
 - Keyboard-only field (ChatGPT's chat box right after a fresh launch): bubble shows, text is inserted.
+- Google Keep note that already has text: the dictation lands at the cursor, Enter and typing work after it, and
+  the text is still there after leaving and reopening the note.
 - Changing field during cleanup: text is copied with "field changed".
 - Sideloaded APK: the accessibility toggle needs App info > ⋮ > "Allow restricted settings".
 
