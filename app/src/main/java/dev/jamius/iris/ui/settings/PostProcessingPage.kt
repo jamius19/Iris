@@ -131,7 +131,7 @@ fun PostProcessingPage(
         NavCard(
             R.drawable.lucide_spell_check,
             "Custom Words (Beta)",
-            "Names and terms Iris should spell right",
+            "Names and terms Iris should spell right.",
             note = customWordsUnsentNote(
                 settings.customWordsEnabled,
                 customWordsSent,
