@@ -75,4 +75,5 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
   orphaned key); restoring again fixes it.
 - **The password field's text can't be wiped from memory** (Compose holds a String); only the CharArray copy is.
 - **Recreating the activity mid-operation** (rotation, dark-mode switch) shows no result: a backup is cancelled and
-  its file deleted, a restore still completes. The password must be entered again.
+  its file deleted, a restore still completes. The password must be entered again and a restore file picked
+  again (neither is saved).

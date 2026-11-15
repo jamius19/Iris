@@ -8,6 +8,7 @@ package dev.jamius.iris.ui.settings
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +30,7 @@ import dev.jamius.iris.data.settings.NOT_A_BACKUP
 import dev.jamius.iris.data.settings.SettingsRepository
 import dev.jamius.iris.ui.components.Card
 import dev.jamius.iris.ui.components.DraftPasswordField
+import dev.jamius.iris.ui.components.FieldGroup
 import dev.jamius.iris.ui.components.PageScaffold
 import dev.jamius.iris.ui.components.Section
 import dev.jamius.iris.ui.components.SmallButton
@@ -49,9 +51,12 @@ private enum class Action { Backup, Restore }
 
 private class Outcome(val text: String, val error: Boolean)
 
+private class PickedFile(val uri: Uri, val name: String)
+
 /**
- * Backup and Restore: one password for both; Create Backup writes an encrypted file, Restore Backup replaces all
- * settings and API keys with a file's. Nothing here is saveable, so the password never reaches instance state.
+ * Backup and Restore, each with its own password: Create Backup writes an encrypted file; Restore picks a file, then
+ * Restore Backup replaces all settings and API keys with its. Nothing here is saveable, so no password (or picked
+ * file) reaches instance state.
  */
 @OptIn(ExperimentalFoundationApi::class) // undoState: a used password must not come back with undo.
 @Composable
@@ -60,12 +65,14 @@ fun BackupPage(repository: SettingsRepository, onRestored: () -> Unit, onBack: (
     val type = IrisTheme.type
     val resolver = LocalContext.current.contentResolver
     val scope = rememberCoroutineScope()
-    val password = remember { TextFieldState() }
+    val backupPassword = remember { TextFieldState() }
+    val restorePassword = remember { TextFieldState() }
     var passwordError by remember { mutableStateOf<String?>(null) }
+    var picked by remember { mutableStateOf<PickedFile?>(null) }
     var running by remember { mutableStateOf<Action?>(null) }
     var outcome by remember { mutableStateOf<Pair<Action, Outcome>?>(null) }
 
-    fun passwordChars(): CharArray? =
+    fun passwordChars(password: TextFieldState): CharArray? =
         password.text.takeIf { it.isNotEmpty() }?.let { t -> CharArray(t.length) { t[it] } }
 
     suspend fun writeBackup(uri: Uri, chars: CharArray) {
@@ -102,11 +109,15 @@ fun BackupPage(repository: SettingsRepository, onRestored: () -> Unit, onBack: (
             if (action == Action.Backup) scope.launch { deleteDocument(resolver, uri) }
             return
         }
-        // Empty after an activity recreation while the picker was open (the password is never saved).
-        val chars = passwordChars()
+        val password = if (action == Action.Backup) backupPassword else restorePassword
+        // Backup: empty after an activity recreation while the picker was open (the password is never saved).
+        // Restore: its button is disabled while the password is empty.
+        val chars = passwordChars(password)
         if (chars == null) {
-            passwordError = PASSWORD_REQUIRED
-            if (action == Action.Backup) scope.launch { deleteDocument(resolver, uri) }
+            if (action == Action.Backup) {
+                passwordError = PASSWORD_REQUIRED
+                scope.launch { deleteDocument(resolver, uri) }
+            }
             return
         }
         running = action
@@ -116,6 +127,7 @@ fun BackupPage(repository: SettingsRepository, onRestored: () -> Unit, onBack: (
                 outcome = action to Outcome(if (action == Action.Backup) BACKUP_SAVED else RESTORED, error = false)
                 password.clearText()
                 password.undoState.clearHistory()
+                if (action == Action.Restore) picked = null
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -133,53 +145,72 @@ fun BackupPage(repository: SettingsRepository, onRestored: () -> Unit, onBack: (
     val createDocument = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream")
     ) { uri -> if (uri != null) perform(Action.Backup, uri) }
-    // The extension has no MIME type, and Drive may report anything.
+    // The extension has no MIME type, and Drive may report anything. Picking only selects; the file is read on restore.
     val openDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) perform(Action.Restore, uri)
+        if (uri != null) scope.launch { picked = PickedFile(uri, displayName(resolver, uri)) }
     }
 
-    fun start(action: Action) {
+    fun createBackup() {
         outcome = null
-        if (password.text.isEmpty()) {
-            passwordError = PASSWORD_REQUIRED
-            return
-        }
-        if (action == Action.Backup) {
-            val date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
-            createDocument.launch("iris-backup-$date.irisbackup")
-        } else {
-            openDocument.launch(arrayOf("*/*"))
-        }
+        val date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+        createDocument.launch("iris-backup-$date.irisbackup")
+    }
+
+    fun chooseFile() {
+        outcome = null
+        openDocument.launch(arrayOf("*/*"))
     }
 
     PageScaffold(title = "Backup and Restore", onBack = onBack) {
-        Card {
+        Section("Backup") {
+            Text(BACKUP_TEXT, type.subtitle, color = colors.muted)
             DraftPasswordField(
                 label = "Password",
-                state = password,
+                state = backupPassword,
                 placeholder = "Enter a password",
                 helper = PASSWORD_HELPER,
                 error = passwordError,
                 onEdited = { passwordError = null }
             )
-        }
-        Section("Backup") {
-            Text(BACKUP_TEXT, type.subtitle, color = colors.muted)
             ActionButton(
                 if (running == Action.Backup) "Creating…" else "Create Backup",
-                enabled = running == null,
+                enabled = running == null && backupPassword.text.isNotEmpty(),
                 outcome = outcome?.takeIf { it.first == Action.Backup }?.second,
-                onClick = { start(Action.Backup) }
+                onClick = { createBackup() }
             )
         }
         Section("Restore") {
             Text(RESTORE_TEXT, type.subtitle, color = colors.muted)
-            ActionButton(
-                if (running == Action.Restore) "Restoring…" else "Restore Backup",
-                enabled = running == null,
-                outcome = outcome?.takeIf { it.first == Action.Restore }?.second,
-                onClick = { start(Action.Restore) }
-            )
+            val restoreOutcome = outcome?.takeIf { it.first == Action.Restore }?.second
+            val file = picked
+            if (file == null) {
+                ActionButton(
+                    "Choose Backup File",
+                    enabled = running == null,
+                    outcome = restoreOutcome,
+                    onClick = { chooseFile() }
+                )
+            } else {
+                FieldGroup("Selected File") { Text(file.name, type.subtitle, color = colors.muted) }
+                SmallButton("Choose Another File", onClick = { chooseFile() }, enabled = running == null)
+                DraftPasswordField(
+                    label = "Password",
+                    state = restorePassword,
+                    placeholder = "Enter the backup's password",
+                    helper = RESTORE_PASSWORD_HELPER,
+                    error = null,
+                    onEdited = {}
+                )
+                ActionButton(
+                    if (running == Action.Restore) "Restoring…" else "Restore Backup",
+                    enabled = running == null && restorePassword.text.isNotEmpty(),
+                    outcome = restoreOutcome,
+                    onClick = {
+                        outcome = null
+                        perform(Action.Restore, file.uri)
+                    }
+                )
+            }
         }
     }
 }
@@ -197,6 +228,15 @@ private fun ActionButton(text: String, enabled: Boolean, outcome: Outcome?, onCl
 /** Best effort: some providers can't delete, and the file may already be gone. */
 private suspend fun deleteDocument(resolver: ContentResolver, uri: Uri) {
     withContext(NonCancellable + Dispatchers.IO) { runCatching { DocumentsContract.deleteDocument(resolver, uri) } }
+}
+
+/** The picked file's name, or a generic one when the provider doesn't report it. */
+private suspend fun displayName(resolver: ContentResolver, uri: Uri): String = withContext(Dispatchers.IO) {
+    runCatching {
+        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+            if (it.moveToFirst()) it.getString(0) else null
+        }
+    }.getOrNull()?.takeIf { it.isNotBlank() } ?: "Backup file"
 }
 
 /** At most [limit] bytes of the stream (a picked file may be huge). */
@@ -224,6 +264,8 @@ private const val RESTORE_FAILED = "Couldn't restore the backup. Try again."
 
 private const val PASSWORD_HELPER = "Needed to restore the backup and can't be recovered. Anyone with the file and " +
     "the password can read your API keys."
+
+private const val RESTORE_PASSWORD_HELPER = "The password the backup was created with."
 
 private const val BACKUP_TEXT = "Saves all settings, prompts, custom providers and API keys to an encrypted file. " +
     "Statistics and downloaded models aren't included."
