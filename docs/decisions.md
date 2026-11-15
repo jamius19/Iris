@@ -87,7 +87,8 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
 - **The fuzzy correction has false positives** ("nation" -> "Notion", "James" -> "Jamius", "cloud" -> "Claude",
   "sonic" -> "Soniox", "market" -> "Marketo" when those are in the list). It is stricter than Handy's (phonetic
   factor 0.5, fuzzy only for keys of 5+ characters, a fuzzy span yields to a closer match inside it, plurals such
-  as "Teslas" are kept), and "Correct Similar-Sounding Words" turns it off.
+  as "Teslas" are kept), so it is off by default: "Correct Similar-Sounding Words" (under the master toggle) turns
+  it on.
 - **Custom words that are also common words are capitalised everywhere** when that switch is on ("go" -> "Go",
   "rust" -> "Rust", "notion" -> "Notion"). Only all-caps acronyms under 5 letters ("US", "IT", "AI") leave an
   all-lowercase word as is ("let us know"); "Us" still becomes "US".

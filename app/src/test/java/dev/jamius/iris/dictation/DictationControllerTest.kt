@@ -1203,7 +1203,12 @@ class DictationControllerTest {
         assertEquals(listOf("um hello"), finals)
     }
 
-    private val withWords = openAi.copy(sttLanguage = "en", customWordsEnabled = true, customWords = listOf("Deepgram"))
+    private val withWords = openAi.copy(
+        sttLanguage = "en",
+        customWordsEnabled = true,
+        customWords = listOf("Deepgram"),
+        correctSimilarWords = true
+    )
 
     @Test
     fun customWordsAreCorrectedAfterFillerRemoval() = runTest {

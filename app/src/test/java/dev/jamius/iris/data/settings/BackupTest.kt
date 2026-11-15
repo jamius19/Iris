@@ -294,7 +294,7 @@ class BackupTest {
         val prefs = mutablePreferencesOf(
             booleanPreferencesKey("custom_words_enabled") to true,
             stringPreferencesKey("custom_words") to encodeCustomWords(listOf("Deepgram", "Jamius Siam")),
-            booleanPreferencesKey("correct_similar_words") to false,
+            booleanPreferencesKey("correct_similar_words") to true,
         )
 
         val restored = roundTrip(BackupContents(prefs, emptyMap()))
@@ -303,7 +303,7 @@ class BackupTest {
         val settings = restored.prefs.toSettings(emptySet())
         assertTrue(settings.customWordsEnabled)
         assertEquals(listOf("Deepgram", "Jamius Siam"), settings.customWords)
-        assertFalse(settings.correctSimilarWords)
+        assertTrue(settings.correctSimilarWords)
     }
 
     @Test

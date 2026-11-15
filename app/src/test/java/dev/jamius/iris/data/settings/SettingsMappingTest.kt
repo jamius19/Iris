@@ -366,7 +366,7 @@ class SettingsMappingTest {
 
         assertFalse(settings.customWordsEnabled)
         assertEquals(emptyList<String>(), settings.customWords)
-        assertTrue(settings.correctSimilarWords)
+        assertFalse(settings.correctSimilarWords)
     }
 
     @Test
@@ -374,13 +374,13 @@ class SettingsMappingTest {
         val prefs = mutablePreferencesOf(
             Keys.CUSTOM_WORDS_ENABLED to true,
             Keys.CUSTOM_WORDS to encodeCustomWords(listOf("Deepgram", "Jamius Siam")),
-            Keys.CORRECT_SIMILAR_WORDS to false,
+            Keys.CORRECT_SIMILAR_WORDS to true,
         )
         val settings = prefs.toSettings(emptySet())
 
         assertTrue(settings.customWordsEnabled)
         assertEquals(listOf("Deepgram", "Jamius Siam"), settings.customWords)
-        assertFalse(settings.correctSimilarWords)
+        assertTrue(settings.correctSimilarWords)
     }
 
     @Test

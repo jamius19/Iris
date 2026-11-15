@@ -220,11 +220,16 @@ fun customWordsSttNote(settings: Settings, sent: Boolean): String? =
         null
     }
 
-/** The Custom Words card's note when the selected model doesn't get them ([sent] false), else null. */
-fun customWordsUnsentNote(sent: Boolean, cleanupEnabled: Boolean): String? = when {
+/**
+ * The Custom Words card's note when the selected model doesn't get them ([sent] false), naming what still applies,
+ * else null.
+ */
+fun customWordsUnsentNote(sent: Boolean, correctionEnabled: Boolean, cleanupEnabled: Boolean): String? = when {
     sent -> null
-    cleanupEnabled -> "Not sent to this model. Only the correction and LLM cleanup apply."
-    else -> "Not sent to this model. Only the correction applies."
+    correctionEnabled && cleanupEnabled -> "Not sent to this model. Only the correction and LLM cleanup apply."
+    correctionEnabled -> "Not sent to this model. Only the correction applies."
+    cleanupEnabled -> "Not sent to this model. Only the LLM cleanup applies."
+    else -> "Not sent to this model, so custom words have no effect."
 }
 
 private const val NEW_PROMPT = "New prompt"

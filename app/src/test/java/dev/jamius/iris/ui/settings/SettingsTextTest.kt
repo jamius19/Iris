@@ -295,15 +295,23 @@ class SettingsTextTest {
 
     @Test
     fun customWordsUnsentNoteNamesWhatStillApplies() {
-        assertNull(customWordsUnsentNote(sent = true, cleanupEnabled = true))
-        assertNull(customWordsUnsentNote(sent = true, cleanupEnabled = false))
+        assertNull(customWordsUnsentNote(sent = true, correctionEnabled = true, cleanupEnabled = true))
+        assertNull(customWordsUnsentNote(sent = true, correctionEnabled = false, cleanupEnabled = false))
         assertEquals(
             "Not sent to this model. Only the correction and LLM cleanup apply.",
-            customWordsUnsentNote(sent = false, cleanupEnabled = true)
+            customWordsUnsentNote(sent = false, correctionEnabled = true, cleanupEnabled = true)
         )
         assertEquals(
             "Not sent to this model. Only the correction applies.",
-            customWordsUnsentNote(sent = false, cleanupEnabled = false)
+            customWordsUnsentNote(sent = false, correctionEnabled = true, cleanupEnabled = false)
+        )
+        assertEquals(
+            "Not sent to this model. Only the LLM cleanup applies.",
+            customWordsUnsentNote(sent = false, correctionEnabled = false, cleanupEnabled = true)
+        )
+        assertEquals(
+            "Not sent to this model, so custom words have no effect.",
+            customWordsUnsentNote(sent = false, correctionEnabled = false, cleanupEnabled = false)
         )
     }
 }

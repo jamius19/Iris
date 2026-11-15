@@ -132,7 +132,7 @@ fun PostProcessingPage(
             R.drawable.lucide_spell_check,
             "Custom Words (Beta)",
             "Names and terms Iris should spell right",
-            note = customWordsUnsentNote(customWordsSent, settings.cleanupEnabled),
+            note = customWordsUnsentNote(customWordsSent, settings.correctSimilarWords, settings.cleanupEnabled),
             onClick = onOpenCustomWords
         )
         Card(verticalPadding = 15.dp) {

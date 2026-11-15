@@ -118,11 +118,13 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - A name the provider normally misspells comes out right on OpenAI (`gpt-live-transcribe` and `whisper-1`),
   Deepgram `nova-3` streaming and upload, Soniox `stt-rt-v6` and async.
 - Deepgram with 100 long phrases doesn't fail (token budget; the log shows the dropped count); nova-2 still works.
-- An on-device dictation gets the fuzzy fix ("sonics" -> "Soniox" with Soniox in the list).
+- With Correct Similar-Sounding Words on, an on-device dictation gets the fuzzy fix ("sonics" -> "Soniox" with
+  Soniox in the list); with it off (the default) the text is left as transcribed.
 - AI Cleanup keeps a custom spelling.
 - Master off sends nothing (provider logs / usage show no keyterms, keywords, prompt or context).
 - Settings: Post Processing -> Custom Words, back (button and predictive gesture) returns to Post Processing, then
-  Home; the card title and page header read "Custom Words (Beta)".
+  Home; the card title and page header read "Custom Words (Beta)". Correct Similar-Sounding Words sits in the
+  master toggle's card under a separator, off on a fresh install, dimmed but still switchable with the master off.
 - Add Word: plus and keyboard Done add the trimmed word to the end of the list and clear the field (keyboard stays
   open after Done); a blank or case-insensitive duplicate adds nothing; each row's trash deletes it; the list
   survives leaving the page and an app restart.
@@ -132,7 +134,9 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
   toggle off or no words; the Custom Words card has no note.
 - Unsupported model (on device, Vercel AI Gateway, Deepgram `nova-2`, OpenAI `gpt-realtime-whisper`): no
   Transcription note; the Custom Words card shows "Not sent to this model. Only the correction and LLM cleanup
-  apply." with AI Cleanup on, "...Only the correction applies." with it off; the card still opens.
+  apply." with the correction and AI Cleanup on, "...Only the correction applies." with cleanup off, "...Only the
+  LLM cleanup applies." with the correction off, "Not sent to this model, so custom words have no effect." with
+  both off; the card still opens.
 - Post Processing with the prompt field focused and edited, tap the Custom Words card: the edit is saved and the
   keyboard closes.
 - `whisper-1` with Skip silence off and one short word dictated: the "Glossary:" prompt is not returned as the

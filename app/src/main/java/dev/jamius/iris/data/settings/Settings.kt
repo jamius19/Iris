@@ -81,7 +81,7 @@ data class Settings(
     val customWordsEnabled: Boolean,
     /** The Custom Words list, normalised ([normalizeCustomWords]), in the user's order. */
     val customWords: List<String>,
-    /** Fix words in the final transcript that sound like a custom word (off = no in-app change). */
+    /** Fix words in the final transcript that sound like a custom word (off, the default = no in-app change). */
     val correctSimilarWords: Boolean,
     val cleanupEnabled: Boolean,
     val cleanupProviderId: String,

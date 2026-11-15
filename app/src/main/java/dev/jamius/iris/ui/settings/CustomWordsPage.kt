@@ -8,6 +8,7 @@ package dev.jamius.iris.ui.settings
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.input.clearText
@@ -40,9 +41,10 @@ import dev.jamius.iris.ui.components.rememberSaveState
 import dev.jamius.iris.ui.theme.IrisTheme
 
 /**
- * Custom Words (under Post Processing): the master switch, then (dimmed while it is off, still editable) the
- * Correct Similar-Sounding Words switch, the Add Word field (plus or IME Done adds it; over the caps it shows an error
- * and isn't added) and the words, each with a delete. Adds and deletes save at once.
+ * Custom Words (under Post Processing): the master switch with, under it in the same card, the Correct
+ * Similar-Sounding Words switch, then the Add Word field (plus or IME Done adds it; over the caps it shows an error and
+ * isn't added) and the words, each with a delete. All but the master switch are dimmed while it is off, still editable.
+ * Adds and deletes save at once.
  */
 @Composable
 fun CustomWordsPage(settings: Settings, repository: SettingsRepository, saver: Saver, onBack: () -> Unit) {
@@ -71,17 +73,19 @@ fun CustomWordsPage(settings: Settings, repository: SettingsRepository, saver: S
                 saver = saver,
                 icon = R.drawable.lucide_spell_check
             )
+            Separator()
+            Box(Modifier.alpha(dim)) {
+                SwitchRow(
+                    title = "Correct Similar-Sounding Words",
+                    subtitle = "Fix words in the final text that sound like one of yours. May occasionally change " +
+                        "the wrong word.",
+                    checked = settings.correctSimilarWords,
+                    onSave = { repository.setCorrectSimilarWords(it) },
+                    saver = saver
+                )
+            }
         }
         Card(Modifier.alpha(dim), verticalPadding = 15.dp) {
-            SwitchRow(
-                title = "Correct Similar-Sounding Words",
-                subtitle = "Fix words in the final text that sound like one of yours. May occasionally change the " +
-                    "wrong word.",
-                checked = settings.correctSimilarWords,
-                onSave = { repository.setCorrectSimilarWords(it) },
-                saver = saver
-            )
-            Separator()
             DraftTextField(
                 label = "Add Word",
                 state = input,

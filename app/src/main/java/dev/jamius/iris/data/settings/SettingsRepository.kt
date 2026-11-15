@@ -383,7 +383,7 @@ internal fun Preferences.toSettings(storedSecrets: Set<Secret>): Settings {
         customWordsEnabled = this[Keys.CUSTOM_WORDS_ENABLED] ?: false,
         // Normalised on read too: a restored backup may break the rules providers rely on.
         customWords = normalizeCustomWords(customWords()),
-        correctSimilarWords = this[Keys.CORRECT_SIMILAR_WORDS] ?: true,
+        correctSimilarWords = this[Keys.CORRECT_SIMILAR_WORDS] ?: false,
         cleanupEnabled = this[Keys.CLEANUP_ENABLED] ?: false,
         cleanupProviderId = cleanupProviderId,
         cleanupModel = this[Keys.CLEANUP_MODEL] ?: Settings.DEFAULT_CLEANUP_MODEL,
