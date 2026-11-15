@@ -13,3 +13,8 @@
 
 # sherpa-onnx's JNI reads config fields and builds results by name.
 -keep class com.k2fsa.sherpa.onnx.** { *; }
+
+# R8 partial (packageScope) bug: app code outside the scope pins the Kotlin multi-file facade part it calls (e.g.
+# StringsKt__StringNumberConversionsJVMKt for toFloatOrNull), then R8 repackages an unpinned part in the same
+# package-private inheritance chain and the app dies on start with IllegalAccessError. Keep the parts in place.
+-keep,allowshrinking,allowoptimization,allowobfuscation class kotlin.**Kt__*, kotlinx.**Kt__*
