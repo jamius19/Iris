@@ -95,6 +95,9 @@ class BubbleOverlay(
     /** Display y of the button's top; the window's y differs by [blurMarginPx] and while the pill opens up. */
     private var buttonY = 0
     private var expanded = false
+
+    /** The owner's latest status (see [setStatus]). */
+    private var status = BubbleStatus.IDLE
     private var revealAnimator: ValueAnimator? = null
 
     /** The bubble window's applied touch region (see [updateTouchRegion]); null for a new window. */
@@ -159,7 +162,8 @@ class BubbleOverlay(
 
     /**
      * Fades, zooms and blurs the bubble in, and the panel if it should show (see [showText]), in their current state
-     * (no replayed status/pill animations). During [hide]'s exit animation, both turn back from where they are.
+     * (no replayed status/pill animations). During [hide]'s exit animation, both turn back from where they are; a
+     * status held back during the exit (see [setStatus]) then animates in.
      */
     fun show() {
         if (bubbleShown && !stackExiting) return
@@ -174,6 +178,7 @@ class BubbleOverlay(
                 return
             }
         }
+        if (stackExiting) applyStatus() // Held back during the exit (see setStatus()).
         animateStack(enter = true)
         if (panelWanted) {
             // The panel may still be animating out (it outlasts the stack's exit), or be gone.
@@ -191,7 +196,7 @@ class BubbleOverlay(
     /**
      * Fades, zooms and blurs the bubble out, then removes its window; the panel animates out alongside. Until removed,
      * [bubbleShown] stays true and taps are ignored; [showText] keeps the text for [show]. With [animate] false
-     * (teardown) both windows are removed at once. The status and panel text are left to the owner.
+     * (teardown) both windows are removed at once. Status updates meanwhile are held back (see [setStatus]).
      */
     fun hide(animate: Boolean = true) {
         if (!animate) {
@@ -215,6 +220,7 @@ class BubbleOverlay(
         blurStack(1f) // Clears the effect.
         touchRect = null
         stack.requestLayout() // A re-added stack could skip layout, which sets the new window's touch region.
+        applyStatus() // Held back during the exit (see setStatus()); jumps, as the stack is gone.
     }
 
     /**
@@ -267,8 +273,16 @@ class BubbleOverlay(
         touchRect = rect
     }
 
-    /** Also expands the pill while [BubbleStatus.LISTENING] and collapses it otherwise. */
+    /**
+     * Also expands the pill while [BubbleStatus.LISTENING] and collapses it otherwise. Held back while the stack
+     * animates out, so it leaves looking as it did; applied once it is removed or [show] turns it back.
+     */
     fun setStatus(status: BubbleStatus) {
+        this.status = status
+        if (!stackExiting) applyStatus()
+    }
+
+    private fun applyStatus() {
         bubble.status = status
         setExpanded(status == BubbleStatus.LISTENING)
     }

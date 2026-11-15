@@ -34,8 +34,12 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - At rest, show: the waveform draws itself left to right while the bubble fades in; hide: it un-draws while it
   fades out. Rapid focus changes reverse it from where it is, with no jump or full-wave flash. Its size and weight
   look balanced in the circle, in light and dark mode, also on Android 12 and below (no blur).
-- Leaving a field while Listening: no waveform appears as the bubble fades out. Returning mid-Finalizing: spinner
-  only, no waveform draw.
+- Leaving a field while Listening: the bubble fades out still showing the ✕ on the control colour with the pill
+  out (no turn to the white circle, no waveform). Same while Finalizing (spinner), on a tick and on a !: it leaves
+  as it looked, also when the session finishes or times out during the fade. Returning within ~200 ms of the fade
+  starting (about 0.3-0.5 s after leaving; before that nothing hides and Listening simply continues): the ✕
+  turns back to the white circle, the pill slides in and the waveform draws in, no stale ✕. Returning later: the
+  waveform draws in, no ✕ flash. Returning mid-Finalizing: spinner only, no waveform draw.
 - Back to rest while shown (after Done, after an error, and after cancelling with the ✕): the waveform draws itself
   in again as the circle turns back, without also growing in or flashing fully drawn first. Exception: a ✕ cancel
   before the ✕ has fully turned in (~250 ms) reverses the morph, so the full wave grows back instead (intended).
