@@ -69,6 +69,9 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
   `com.github.k2-fsa:sherpa-onnx` (pulls desktop libs). Its AAR checksum is pinned in
   `gradle/verification-metadata.xml`: a version bump needs new checksums. R8 must keep `com.k2fsa.sherpa.onnx.**`
   (JNI reads fields by name).
+- **R8 packageScope bug**: R8 (9.5.29) can move a Kotlin facade part (`StringsKt__*`) out of its package away from
+  its package-private super, so the release crashes on start (`IllegalAccessError`). Keep the `Kt__*` rule in
+  `rules.keep`, and launch a release build after adding stdlib calls to app code.
 - **No `onnxruntime-android`**: its `libonnxruntime.so` clashes with sherpa's (versioned symbols, only one can be
   packaged). The VAD runs through sherpa's `Vad.compute`.
 - **sherpa native exits**: an unknown Whisper language kills the process. Only `whisperLanguage()` output may reach
