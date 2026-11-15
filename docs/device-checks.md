@@ -34,7 +34,7 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - At rest, show: the waveform draws itself left to right while the bubble fades in; hide: it un-draws while it
   fades out. Rapid focus changes reverse it from where it is, with no jump or full-wave flash. Its size and weight
   look balanced in the circle, in light and dark mode, also on Android 12 and below (no blur).
-- Bubble size (36 dp circle, 21 dp waveform, 36 x 70 dp pill): the wave sits centred with clear room to the edge;
+- Bubble size (38 dp circle, 21 dp waveform, 38 x 74 dp pill): the wave sits centred with clear room to the edge;
   the ✕, spinner, tick and ! look centred and proportionate; the pill is as wide as the circle with round ends,
   centred under it on both edges, its bars proportionate, and hides fully behind the circle when collapsed (no red
   sliver). The panel keeps its 16 dp corners. A position saved before the resize still shows on the same edge at

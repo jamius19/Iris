@@ -143,12 +143,12 @@ internal class PillView(context: Context) : View(context) {
 
     private companion object {
         const val MARGIN_DP = 6f
-        const val PILL_WIDTH_DP = 36f
-        const val PILL_HEIGHT_DP = 70f
+        const val PILL_WIDTH_DP = 38f
+        const val PILL_HEIGHT_DP = 74f
         const val GAP_DP = 6f
-        const val BAR_STROKE_DP = 4.5f
-        const val BAR_MAX_DP = 21f
-        const val BAR_PADDING_DP = 15.3f
+        const val BAR_STROKE_DP = 4.75f
+        const val BAR_MAX_DP = 22.3f
+        const val BAR_PADDING_DP = 16.15f
         const val ATTACK_MS = 40f
         const val RELEASE_MS = 200f
         const val SETTLED = 0.001f

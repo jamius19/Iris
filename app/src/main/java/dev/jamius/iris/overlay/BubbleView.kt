@@ -330,10 +330,10 @@ internal class BubbleView(context: Context) : View(context) {
     }
 
     private companion object {
-        const val RADIUS_DP = 18
+        const val RADIUS_DP = 19
         const val MARGIN_DP = 6
         const val SHADOW_ROOM_DP = 6
-        const val ICON_DP = 18
+        const val ICON_DP = 19
         const val SPINNER_STROKE_DP = 2.5f
         const val SPINNER_SWEEP = 270f
         const val MORPH_MS = 250L
