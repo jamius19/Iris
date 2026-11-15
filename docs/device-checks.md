@@ -22,32 +22,14 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Re-show after focus loss mid-Finalizing restores spinner and panel without replayed animations.
 - Panel sliders apply live in another app; at 90 % width the panel stays on screen on both sides and in landscape.
 - TalkBack reads "Start / Cancel / Stop dictation" and double-tap works on the ✕ and the pill.
-- Show / hide (focus a field, then leave it): the bubble fades in blurred -> sharp and out sharp -> blurred with no
-  hard square edge and no sharp first or last frame; also while Listening (pill out), with the pill opening up near
-  the IME, and on both edges. Android 12 and below: fade + zoom only.
-- Android 13+: taps just beside the bubble and the pill (~16 dp) reach the app or keyboard below; the circle, ✕,
-  pill and gap still respond after expand / collapse, a flip, a drag, rotation and hide / show. The circle sits
-  where it did before, also at the screen edges and in landscape with a cutout; with no bottom bar (3-button nav in
-  landscape) it may sit ~6 dp lower at the bottom edge (accepted).
-- Android 13+, landscape, keyboard up, bubble near the top, Listening: the whole pill shows (not cut off at the top).
-- Rapid focus changes (hide mid-show, show mid-hide): the bubble turns back smoothly, never flashes sharp.
-- At rest, show: the waveform draws itself left to right while the bubble fades in; hide: it un-draws while it
-  fades out. Rapid focus changes reverse it from where it is, with no jump or full-wave flash. Its size and weight
-  look balanced in the circle, in light and dark mode, also on Android 12 and below (no blur).
-- Bubble size (38 dp circle, 21 dp waveform, 38 x 74 dp pill): the wave sits centred with clear room to the edge;
-  the ✕, spinner, tick and ! look centred and proportionate; the pill is as wide as the circle with round ends,
-  centred under it on both edges, its bars proportionate, and hides fully behind the circle when collapsed (no red
-  sliver). The panel keeps its 16 dp corners. A position saved before the resize still shows on the same edge at
-  about the same height.
-- Leaving a field while Listening: the bubble fades out still showing the ✕ on the control colour with the pill
-  out (no turn to the white circle, no waveform). Same while Finalizing (spinner), on a tick and on a !: it leaves
-  as it looked, also when the session finishes or times out during the fade. Returning within ~200 ms of the fade
-  starting (about 0.3-0.5 s after leaving; before that nothing hides and Listening simply continues): the ✕
-  turns back to the white circle, the pill slides in and the waveform draws in, no stale ✕. Returning later: the
-  waveform draws in, no ✕ flash. Returning mid-Finalizing: spinner only, no waveform draw.
-- Back to rest while shown (after Done, after an error, and after cancelling with the ✕): the waveform draws itself
-  in again as the circle turns back, without also growing in or flashing fully drawn first. Exception: a ✕ cancel
-  before the ✕ has fully turned in (~250 ms) reverses the morph, so the full wave grows back instead (intended).
+- Show / hide: the bubble fades in blurred -> sharp and out sharp -> blurred, no hard edge, also with the pill out
+  and on both edges; rapid focus changes reverse smoothly. Android 12 and below: fade + zoom only.
+- Android 13+: taps ~16 dp beside the bubble and pill reach the app below; the circle sits where it did before;
+  landscape with the keyboard up and the bubble near the top shows the whole pill.
+- The waveform draws in on show and on return to rest (Done, error, ✕), un-draws on hide; it, the glyphs and the
+  pill look centred and proportionate in light and dark.
+- Leaving a field while Listening, Finalizing or on a tick / !: the bubble fades out as it looked. Returning
+  mid-fade shows the current state, no stale ✕.
 
 ## VAD and Speed (real voice)
 - First and last words aren't clipped, incl. speaking right after the tap and stopping right after the last word.
