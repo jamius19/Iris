@@ -60,6 +60,8 @@ class SonioxSpeechToText(
     /** Billed by wall-clock stream time, and wants audio at real-time pace: a speed-up saves nothing. */
     override val allowsSpeedUp: Boolean get() = false
 
+    override fun takesCustomWords(model: String): Boolean = true
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,

@@ -87,10 +87,11 @@ import dev.jamius.iris.ui.theme.IrisTheme
 import java.util.UUID
 
 /**
- * Post Processing Settings: the Remove Filler Words switch, the Custom Words card ([onOpenCustomWords]), the AI
- * Cleanup switch, then (dimmed while cleanup is off, still editable) the provider (plus a new custom one), its key,
- * model, reasoning level, timeout and provider options, and the prompts. A new custom provider is an in-memory draft
- * until saved (never used for cleanup); picking another provider or leaving the page discards it.
+ * Post Processing Settings: the Remove Filler Words switch, the Custom Words card ([onOpenCustomWords]; a note while
+ * the selected transcription model doesn't get them, [customWordsSent] false), the AI Cleanup switch, then (dimmed
+ * while cleanup is off, still editable) the provider (plus a new custom one), its key, model, reasoning level, timeout
+ * and provider options, and the prompts. A new custom provider is an in-memory draft until saved (never used for
+ * cleanup); picking another provider or leaving the page discards it.
  */
 @Composable
 fun PostProcessingPage(
@@ -99,6 +100,7 @@ fun PostProcessingPage(
     saver: Saver,
     catalogs: ModelCatalogs,
     favicons: Favicons,
+    customWordsSent: Boolean,
     onOpenCustomWords: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -128,8 +130,9 @@ fun PostProcessingPage(
         }
         NavCard(
             R.drawable.lucide_spell_check,
-            "Custom Words",
+            "Custom Words (Beta)",
             "Names and terms Iris should spell right",
+            note = customWordsUnsentNote(customWordsSent, settings.cleanupEnabled),
             onClick = onOpenCustomWords
         )
         Card(verticalPadding = 15.dp) {

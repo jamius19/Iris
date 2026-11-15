@@ -41,6 +41,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.jamius.iris.cleanup.GatewayModel
 import dev.jamius.iris.data.settings.CustomCleanupProvider
+import dev.jamius.iris.data.settings.Settings
 import dev.jamius.iris.data.settings.SettingsRepository
 import dev.jamius.iris.dictation.Statistics
 import dev.jamius.iris.stt.ondevice.OnDeviceModelStore
@@ -77,6 +78,7 @@ fun SettingsApp(
     onDeviceModels: OnDeviceModelStore,
     statistics: Statistics,
     favicons: Favicons,
+    sttTakesCustomWords: (Settings) -> Boolean,
 ) {
     val settings = repository.settings.collectAsState(initial = null).value
     // App-level (sessions use it too); it reloads itself when the Soniox key or region changes.
@@ -160,6 +162,7 @@ fun SettingsApp(
     }
     if (settings == null) return
     val back = { page = page.parent ?: Page.Home }
+    val customWordsSent = sttTakesCustomWords(settings)
     Box(Modifier.fillMaxSize()) {
         transition.AnimatedContent(
             transitionSpec = {
@@ -187,6 +190,7 @@ fun SettingsApp(
                         sonioxCatalog,
                         onDeviceModels,
                         onDeviceState,
+                        customWordsSent,
                         onBack = back
                     )
                     Page.PostProcessing -> PostProcessingPage(
@@ -195,6 +199,7 @@ fun SettingsApp(
                         saver,
                         catalogs,
                         favicons,
+                        customWordsSent,
                         onOpenCustomWords = {
                             focusManager.clearFocus()
                             page = Page.CustomWords

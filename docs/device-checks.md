@@ -122,8 +122,17 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - AI Cleanup keeps a custom spelling.
 - Master off sends nothing (provider logs / usage show no keyterms, keywords, prompt or context).
 - Settings: Post Processing -> Custom Words, back (button and predictive gesture) returns to Post Processing, then
-  Home; the over-60-characters and over-100 errors show and nothing is saved; the on-device helper; the
-  Transcription Provider note per provider (cloud, Gateway, on device) and gone with the toggle off or no words.
+  Home; the card title and page header read "Custom Words (Beta)".
+- Add Word: plus and keyboard Done add the trimmed word to the end of the list and clear the field (keyboard stays
+  open after Done); a blank or case-insensitive duplicate adds nothing; each row's trash deletes it; the list
+  survives leaving the page and an app restart.
+- Add Word errors: over 60 characters, or a 101st word, shows the error and adds nothing; typing clears it.
+- Supported model (OpenAI `gpt-live-transcribe`, Deepgram `nova-3`, Soniox) with the toggle on and words: the
+  Transcription Provider shows "Custom words feature is on, so additional charges might apply."; gone with the
+  toggle off or no words; the Custom Words card has no note.
+- Unsupported model (on device, Vercel AI Gateway, Deepgram `nova-2`, OpenAI `gpt-realtime-whisper`): no
+  Transcription note; the Custom Words card shows "Not sent to this model. Only the correction and LLM cleanup
+  apply." with AI Cleanup on, "...Only the correction applies." with it off; the card still opens.
 - Post Processing with the prompt field focused and edited, tap the Custom Words card: the edit is saved and the
   keyboard closes.
 - `whisper-1` with Skip silence off and one short word dictated: the "Glossary:" prompt is not returned as the

@@ -52,6 +52,8 @@ class SonioxFileTranscription(
 
     override fun sampleRate(model: String): Int = SONIOX_SAMPLE_RATE
 
+    override fun takesCustomWords(model: String): Boolean = true
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,

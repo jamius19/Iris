@@ -194,35 +194,37 @@ fun newPromptName(existing: List<String>): String {
 fun providerOptionsError(text: String): String? = runCatching { parseProviderOptions(text) }.exceptionOrNull()?.message
 
 /**
- * Why the Custom Words [text] (one per line) can't be saved, or null: a line over the length cap, or more distinct
- * entries than the count cap. Blank lines and case-insensitive duplicates don't count (they're dropped on save).
+ * Why [input] can't be added to the Custom Words [words], or null: over the length cap, or the list is full. A blank
+ * [input] is no error (nothing is added; nor is a case-insensitive duplicate, dropped on save).
  */
-fun customWordsError(text: String): String? {
-    val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
-    if (lines.any { it.length > Settings.MAX_CUSTOM_WORD_LENGTH }) {
-        return "Keep each line to ${Settings.MAX_CUSTOM_WORD_LENGTH} characters or fewer."
-    }
-    val count = lines.distinctBy { it.lowercase() }.size
-    if (count > Settings.MAX_CUSTOM_WORDS) {
-        return "Up to ${Settings.MAX_CUSTOM_WORDS} words or phrases ($count entered)."
-    }
-    return null
+fun customWordError(words: List<String>, input: String): String? = when {
+    input.isBlank() -> null
+    input.trim().length > Settings.MAX_CUSTOM_WORD_LENGTH ->
+        "Keep it to ${Settings.MAX_CUSTOM_WORD_LENGTH} characters or fewer."
+    words.size >= Settings.MAX_CUSTOM_WORDS -> "The list is full (${Settings.MAX_CUSTOM_WORDS} words or phrases)."
+    else -> null
 }
 
-/** The Custom Words field's helper; on device, also why they help less there. */
-fun customWordsHelper(onDevice: Boolean): String {
-    val limits = "One per line, up to ${Settings.MAX_CUSTOM_WORDS}, ${Settings.MAX_CUSTOM_WORD_LENGTH} characters each."
-    if (!onDevice) return limits
-    return "$limits On-device models don't get them, so they help less there: only the correction and AI Cleanup " +
-        "use them."
-}
+/** The Add Word field's helper: the caps. */
+const val CUSTOM_WORDS_HELPER =
+    "Up to ${Settings.MAX_CUSTOM_WORDS} words or phrases, ${Settings.MAX_CUSTOM_WORD_LENGTH} characters each."
 
-/** The Transcription Provider note while Custom Words are in use (on, with words), else null. */
-fun customWordsSttNote(settings: Settings): String? = when {
-    settings.activeCustomWords.isEmpty() -> null
-    settings.sttOnDevice -> "Custom Words are on but aren't sent to on-device models."
-    settings.sttGateway -> "Custom Words are on but aren't sent to Vercel AI Gateway."
-    else -> "Custom Words are on and may increase charges for some providers."
+/**
+ * The Transcription Provider note while Custom Words are in use (on, with words) and [sent] (the selected provider and
+ * model get them), else null.
+ */
+fun customWordsSttNote(settings: Settings, sent: Boolean): String? =
+    if (sent && settings.activeCustomWords.isNotEmpty()) {
+        "Custom words feature is on, so additional charges might apply."
+    } else {
+        null
+    }
+
+/** The Custom Words card's note when the selected model doesn't get them ([sent] false), else null. */
+fun customWordsUnsentNote(sent: Boolean, cleanupEnabled: Boolean): String? = when {
+    sent -> null
+    cleanupEnabled -> "Not sent to this model. Only the correction and LLM cleanup apply."
+    else -> "Not sent to this model. Only the correction applies."
 }
 
 private const val NEW_PROMPT = "New prompt"

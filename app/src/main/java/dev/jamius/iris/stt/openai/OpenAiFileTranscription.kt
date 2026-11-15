@@ -53,6 +53,8 @@ class OpenAiFileTranscription(
 
     override fun sampleRate(model: String): Int = SAMPLE_RATE
 
+    override fun takesCustomWords(model: String): Boolean = usesKeywords(model) || takesPrompt(model)
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,

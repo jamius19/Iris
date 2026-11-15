@@ -62,6 +62,7 @@ fun TranscriptionPage(
     sonioxCatalog: SonioxCatalog,
     onDeviceModels: OnDeviceModelStore,
     onDeviceState: OnDeviceModelStore.State,
+    customWordsSent: Boolean,
     onBack: () -> Unit,
 ) {
     val provider = when {
@@ -84,7 +85,7 @@ fun TranscriptionPage(
                     optionLabel = ::sttProviderLabel,
                     onSave = { repository.setSttProvider(it) },
                     saver = saver,
-                    helper = customWordsSttNote(settings),
+                    helper = customWordsSttNote(settings, customWordsSent),
                     spacing = 9.dp,
                     optionIcon = { ProviderIconBox { BrandIcon(sttProviderIcon(it)) } }
                 )

@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -397,7 +398,8 @@ private fun OnEdited(state: TextFieldState, onEdited: () -> Unit) {
 
 /**
  * A single-line text field that only edits [state] (a form draft, saved elsewhere): a trash clears it. [error] shows
- * in the helper slot; [onEdited] runs on each edit (e.g. to clear the error).
+ * in the helper slot; [onEdited] runs on each edit (e.g. to clear the error). IME Done runs [onDone] if set, else
+ * clears focus. [action] (e.g. an add button) sits beside the field.
  */
 @Composable
 fun DraftTextField(
@@ -408,6 +410,8 @@ fun DraftTextField(
     onEdited: () -> Unit,
     focusRequester: FocusRequester = remember { FocusRequester() },
     helper: String? = null,
+    onDone: (() -> Unit)? = null,
+    action: (@Composable () -> Unit)? = null,
 ) {
     val colors = IrisTheme.colors
     val type = IrisTheme.type
@@ -416,46 +420,51 @@ fun DraftTextField(
     OnEdited(state, onEdited)
     val showTrash = state.text.isNotEmpty()
     FieldGroup(label, helper = helper, error = error) {
-        FieldShell(
-            focused = focused,
-            hasError = error != null,
-            multiLine = false,
-            focusRequester = focusRequester,
-            hasTrailing = showTrash,
-            field = {
-                FieldBox(state, placeholder, type.field) {
-                    BasicTextField(
-                        state = state,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester)
-                            .onFocusChanged { focused = it.isFocused }
-                            .semantics { contentDescription = label },
-                        textStyle = type.field.copy(color = colors.text),
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.None,
-                            autoCorrectEnabled = false,
-                            imeAction = ImeAction.Done
-                        ),
-                        onKeyboardAction = { focusManager.clearFocus() },
-                        lineLimits = TextFieldLineLimits.SingleLine,
-                        cursorBrush = SolidColor(colors.text)
-                    )
-                }
-            },
-            trailing = {
-                if (showTrash) {
-                    IconAction(
-                        R.drawable.lucide_trash,
-                        contentDescription = "Clear $label",
-                        tint = colors.failure,
-                        width = 28.dp,
-                        clearFocus = false,
-                        onClick = { state.clearText() }
-                    )
-                }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) {
+                FieldShell(
+                    focused = focused,
+                    hasError = error != null,
+                    multiLine = false,
+                    focusRequester = focusRequester,
+                    hasTrailing = showTrash,
+                    field = {
+                        FieldBox(state, placeholder, type.field) {
+                            BasicTextField(
+                                state = state,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester)
+                                    .onFocusChanged { focused = it.isFocused }
+                                    .semantics { contentDescription = label },
+                                textStyle = type.field.copy(color = colors.text),
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.None,
+                                    autoCorrectEnabled = false,
+                                    imeAction = ImeAction.Done
+                                ),
+                                onKeyboardAction = { if (onDone != null) onDone() else focusManager.clearFocus() },
+                                lineLimits = TextFieldLineLimits.SingleLine,
+                                cursorBrush = SolidColor(colors.text)
+                            )
+                        }
+                    },
+                    trailing = {
+                        if (showTrash) {
+                            IconAction(
+                                R.drawable.lucide_trash,
+                                contentDescription = "Clear $label",
+                                tint = colors.failure,
+                                width = 28.dp,
+                                clearFocus = false,
+                                onClick = { state.clearText() }
+                            )
+                        }
+                    }
+                )
             }
-        )
+            action?.invoke()
+        }
     }
 }
 

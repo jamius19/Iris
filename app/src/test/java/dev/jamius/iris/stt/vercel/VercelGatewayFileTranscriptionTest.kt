@@ -110,6 +110,7 @@ class VercelGatewayFileTranscriptionTest {
         val stt = stt()
         assertFalse(stt.streams)
         assertEquals(16_000, stt.sampleRate("openai/gpt-4o-transcribe"))
+        assertFalse(stt.takesCustomWords("openai/gpt-4o-transcribe"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

@@ -43,7 +43,7 @@ custom words -> `IrisAccessibilityService.onFinalTranscript` (cleanup + insertio
 Only two abstractions: `SpeechToTextProvider` and `CleanupProvider`. Provider choice is
 `AppContainer.speechToText(settings)` / `cleanup(settings)`, not a router. A new provider is a new implementation.
 Provider differences are interface members (`sampleRate(model)`, `streams`, `liveText(model)`, `allowsSpeedUp`,
-`wantsSegmentEnds`), not new types.
+`wantsSegmentEnds`, `takesCustomWords(model)`), not new types.
 
 ## Key decisions (don't re-litigate without a concrete reason)
 - On device (Nemotron) is the default STT. The mode (streaming vs upload) follows the model, except Deepgram,
@@ -89,6 +89,7 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
 - **Custom words** are normalised on save AND on read (no `<`, `>`, CR, LF; <= 100 entries x 60 chars): OpenAI
   rejects those characters and the cleanup glossary's tags rely on it. Providers get `Settings.activeCustomWords`
   (empty while the toggle is off). Deepgram `keyterm` is Nova-3 only, within an estimated token budget.
+  `takesCustomWords(model)` (the settings' notes) reuses the predicates the request code uses: keep them in sync.
 - **WebSocket warm-up** must go through an HTTP/1.1 client derived from the socket's client, or OkHttp won't
   reuse the connection.
 - **Cleanup timeout** uses `withTimeoutOrNull`, not `withTimeout` (its exception is a `CancellationException` and

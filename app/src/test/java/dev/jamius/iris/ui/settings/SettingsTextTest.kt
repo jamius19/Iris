@@ -267,44 +267,43 @@ class SettingsTextTest {
     }
 
     @Test
-    fun customWordsErrors() {
-        val hundred = (1..100).joinToString("\n") { "w$it" }
-        assertNull(customWordsError(hundred))
-        assertEquals("Up to 100 words or phrases (101 entered).", customWordsError("$hundred\nw101"))
-        // Blank lines and case-insensitive duplicates don't count.
-        assertNull(customWordsError("$hundred\n\n  \nW1\nw2 "))
-        assertNull(customWordsError("x".repeat(60)))
-        assertEquals("Keep each line to 60 characters or fewer.", customWordsError("ok\n" + "x".repeat(61)))
-        assertNull(customWordsError(""))
-    }
-
-    @Test
-    fun customWordsHelperTextNamesOnDeviceLimits() {
-        assertEquals("One per line, up to 100, 60 characters each.", customWordsHelper(onDevice = false))
+    fun customWordErrors() {
+        val ninetyNine = (1..99).map { "w$it" }
+        assertNull(customWordError(ninetyNine, "w100"))
+        assertNull(customWordError(ninetyNine, "x".repeat(60)))
+        assertNull(customWordError(ninetyNine, "  ${"x".repeat(60)}  "))
+        assertEquals("Keep it to 60 characters or fewer.", customWordError(ninetyNine, "x".repeat(61)))
         assertEquals(
-            "One per line, up to 100, 60 characters each. On-device models don't get them, so they help less " +
-                "there: only the correction and AI Cleanup use them.",
-            customWordsHelper(onDevice = true)
+            "The list is full (100 words or phrases).",
+            customWordError(ninetyNine + "w100", "w101")
         )
+        // Blank input adds nothing, no error.
+        assertNull(customWordError(ninetyNine + "w100", "  "))
+        assertNull(customWordError(emptyList(), ""))
     }
 
     @Test
-    fun customWordsSttNoteFollowsTheProvider() {
+    fun customWordsSttNoteOnlyWhileInUseAndSent() {
         val on = emptyPreferences().toSettings(emptySet())
             .copy(customWordsEnabled = true, customWords = listOf("Deepgram"))
 
-        assertNull(customWordsSttNote(on.copy(customWordsEnabled = false)))
-        assertNull(customWordsSttNote(on.copy(customWords = emptyList())))
-        assertEquals("Custom Words are on but aren't sent to on-device models.", customWordsSttNote(on))
+        assertEquals("Custom words feature is on, so additional charges might apply.", customWordsSttNote(on, true))
+        assertNull(customWordsSttNote(on, false))
+        assertNull(customWordsSttNote(on.copy(customWordsEnabled = false), true))
+        assertNull(customWordsSttNote(on.copy(customWords = emptyList()), true))
+    }
+
+    @Test
+    fun customWordsUnsentNoteNamesWhatStillApplies() {
+        assertNull(customWordsUnsentNote(sent = true, cleanupEnabled = true))
+        assertNull(customWordsUnsentNote(sent = true, cleanupEnabled = false))
         assertEquals(
-            "Custom Words are on but aren't sent to Vercel AI Gateway.",
-            customWordsSttNote(on.copy(sttProviderId = Settings.STT_PROVIDER_VERCEL_GATEWAY))
+            "Not sent to this model. Only the correction and LLM cleanup apply.",
+            customWordsUnsentNote(sent = false, cleanupEnabled = true)
         )
-        for (id in listOf(Settings.STT_PROVIDER_OPENAI, Settings.STT_PROVIDER_DEEPGRAM, Settings.STT_PROVIDER_SONIOX)) {
-            assertEquals(
-                "Custom Words are on and may increase charges for some providers.",
-                customWordsSttNote(on.copy(sttProviderId = id))
-            )
-        }
+        assertEquals(
+            "Not sent to this model. Only the correction applies.",
+            customWordsUnsentNote(sent = false, cleanupEnabled = false)
+        )
     }
 }

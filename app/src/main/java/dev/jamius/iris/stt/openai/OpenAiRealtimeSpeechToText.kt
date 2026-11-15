@@ -52,6 +52,8 @@ class OpenAiRealtimeSpeechToText(
 
     override fun liveText(model: String): Boolean = hasLiveText(model)
 
+    override fun takesCustomWords(model: String): Boolean = usesKeywords(model) || takesPrompt(model)
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,

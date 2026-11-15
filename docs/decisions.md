@@ -105,4 +105,4 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
   to providers but never corrected in-app. A hyphenated custom word transcribed as one token ("gpt-5")
   is not corrected either (the hyphen ends the run; "gpt 5" is).
 - **An over-cap list in a restored backup is cut silently** (entries over 60 characters dropped, then the first
-  100 kept); typing over the caps in the UI shows an error and isn't saved.
+  100 kept); adding over the caps in the UI shows an error and adds nothing.

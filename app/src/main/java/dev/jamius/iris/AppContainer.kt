@@ -218,6 +218,10 @@ class AppContainer(context: Context) {
         else -> openAiFileStt
     }
 
+    /** The provider and model [settings] select get the custom words, for the settings' Custom Words notes. */
+    fun sttTakesCustomWords(settings: Settings): Boolean =
+        speechToText(settings).takesCustomWords(settings.activeSttModel)
+
     /** The OpenAI transcription models the stored key can use, for the settings' model menu. */
     suspend fun openAiTranscriptionModels(): List<String> =
         listOpenAiTranscriptionModels(httpClient, secretStore.get(Secret.OPENAI_API_KEY))

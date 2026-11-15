@@ -278,6 +278,7 @@ class SonioxFileTranscriptionTest {
         assertFalse(stt.liveText("stt-async-v6"))
         assertTrue(stt.allowsSpeedUp)
         assertEquals(16_000, stt.sampleRate("stt-async-v6"))
+        assertTrue(stt.takesCustomWords("stt-async-v6"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

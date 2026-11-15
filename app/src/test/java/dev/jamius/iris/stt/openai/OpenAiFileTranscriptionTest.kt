@@ -172,6 +172,18 @@ class OpenAiFileTranscriptionTest {
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)
+    fun takesCustomWordsWhereTheFormSendsThem() {
+        val stt = stt()
+        for (model in listOf("gpt-transcribe", "gpt-live-transcribe", "whisper-1", "gpt-4o-transcribe")) {
+            assertTrue(model, stt.takesCustomWords(model))
+        }
+        assertTrue(stt.takesCustomWords("gpt-4o-mini-transcribe-2025-12-15"))
+        assertFalse(stt.takesCustomWords("gpt-realtime-whisper"))
+        assertFalse(stt.takesCustomWords("gpt-4o-transcribe-diarize"))
+        assertFalse(stt.takesCustomWords("custom-transcribe"))
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
     fun overTheLimitUploadsPartsInOrderAndJoinsTheTexts() = runBlocking {
         respond(200, """{"text":"One."}""")
         respond(200, """{"text":"Two."}""")

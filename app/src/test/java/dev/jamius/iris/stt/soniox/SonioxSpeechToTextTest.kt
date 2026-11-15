@@ -333,6 +333,7 @@ class SonioxSpeechToTextTest {
         assertTrue(stt.liveText("stt-rt-v6"))
         assertFalse(stt.allowsSpeedUp)
         assertEquals(16_000, stt.sampleRate("stt-rt-v6"))
+        assertTrue(stt.takesCustomWords("stt-rt-v6"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

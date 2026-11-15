@@ -103,9 +103,14 @@ class SettingsRepository(
         dataStore.edit { it[Keys.CORRECT_SIMILAR_WORDS] = enabled }
     }
 
-    /** [text]: one word or phrase per line, stored normalised ([normalizeCustomWords]). */
-    suspend fun setCustomWords(text: String) {
-        dataStore.edit { it[Keys.CUSTOM_WORDS] = encodeCustomWords(normalizeCustomWords(text.lines())) }
+    /** Adds [word] at the end; the list is stored normalised ([normalizeCustomWords]: drops a blank or duplicate). */
+    suspend fun addCustomWord(word: String) {
+        dataStore.edit { it[Keys.CUSTOM_WORDS] = encodeCustomWords(normalizeCustomWords(it.customWords() + word)) }
+    }
+
+    /** Removes [word] (as [Settings.customWords] shows it). */
+    suspend fun removeCustomWord(word: String) {
+        dataStore.edit { it[Keys.CUSTOM_WORDS] = encodeCustomWords(normalizeCustomWords(it.customWords()) - word) }
     }
 
     suspend fun setCleanupEnabled(enabled: Boolean) {
@@ -342,6 +347,9 @@ internal fun decodeCustomWords(encoded: String): List<String> = json.decodeFromS
 internal fun Preferences.customCleanupProviders(): List<CustomCleanupProvider> =
     this[Keys.CUSTOM_CLEANUP_PROVIDERS]?.let(::decodeCustomProviders).orEmpty()
 
+/** Stored custom words as saved (normalised on read by [toSettings]); none if never saved. */
+internal fun Preferences.customWords(): List<String> = this[Keys.CUSTOM_WORDS]?.let(::decodeCustomWords).orEmpty()
+
 /** Stored prompts, or the seeded default list if prompts were never saved. */
 internal fun Preferences.prompts(): List<CleanupPrompt> =
     this[Keys.PROMPTS]?.let(::decodePrompts) ?: listOf(Settings.DEFAULT_PROMPT)
@@ -374,7 +382,7 @@ internal fun Preferences.toSettings(storedSecrets: Set<Secret>): Settings {
         removeFillerWords = this[Keys.REMOVE_FILLER_WORDS] ?: true,
         customWordsEnabled = this[Keys.CUSTOM_WORDS_ENABLED] ?: false,
         // Normalised on read too: a restored backup may break the rules providers rely on.
-        customWords = this[Keys.CUSTOM_WORDS]?.let(::decodeCustomWords)?.let(::normalizeCustomWords).orEmpty(),
+        customWords = normalizeCustomWords(customWords()),
         correctSimilarWords = this[Keys.CORRECT_SIMILAR_WORDS] ?: true,
         cleanupEnabled = this[Keys.CLEANUP_ENABLED] ?: false,
         cleanupProviderId = cleanupProviderId,

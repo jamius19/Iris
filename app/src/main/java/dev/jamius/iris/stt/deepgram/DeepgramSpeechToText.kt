@@ -54,6 +54,8 @@ class DeepgramSpeechToText(
 
     override fun sampleRate(model: String): Int = DEEPGRAM_SAMPLE_RATE
 
+    override fun takesCustomWords(model: String): Boolean = takesKeyterms(model)
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,

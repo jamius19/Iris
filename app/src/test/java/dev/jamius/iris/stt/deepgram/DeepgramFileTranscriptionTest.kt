@@ -118,6 +118,9 @@ class DeepgramFileTranscriptionTest {
         assertFalse(stt.streams)
         assertFalse(stt.liveText("nova-3"))
         assertEquals(16_000, stt.sampleRate("nova-3"))
+        assertTrue(stt.takesCustomWords("nova-3"))
+        assertTrue(stt.takesCustomWords("nova-3-medical"))
+        assertFalse(stt.takesCustomWords("nova-2"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

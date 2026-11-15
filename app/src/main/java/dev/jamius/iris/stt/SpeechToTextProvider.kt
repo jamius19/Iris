@@ -38,6 +38,9 @@ interface SpeechToTextProvider {
      */
     val wantsSegmentEnds: Boolean get() = false
 
+    /** [transcribe] sends [model] the custom words; false = it ignores them (the settings' Custom Words notes). */
+    fun takesCustomWords(model: String): Boolean = false
+
     /**
      * Streams [audio] (PCM16 mono chunks at [sampleRate] of [model]) to the service and reports the whole live
      * transcript through [onPartial] whenever it changes. Once [audio] completes, finalizes and returns the final
