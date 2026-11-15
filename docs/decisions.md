@@ -63,3 +63,16 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
   no "Allow" dialog (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`): Play allows it only for a few app types; Setup opens
   App info. Only Unrestricted counts as OK, so a fresh install (Optimized by default) shows the row in the
   failure colour.
+
+## Backup
+- **Restore replaces everything**: keys and settings not in the backup are removed. No confirmation (as deletes).
+- **Statistics and downloaded on-device models aren't in the backup**; a restored on-device model may need a download.
+- **The bubble position applies the next time the service starts** (read once at connect).
+- **PBKDF2-SHA256 with 600,000 iterations** (OWASP); a few seconds on slow phones is accepted. No minimum password
+  length; the password can't be recovered.
+- **Unknown setting keys in a backup are kept**, not dropped (dropping needs a hand-kept registry of every key).
+- **A failure during the write phase can leave a partly restored state** (at most keyless providers, never an
+  orphaned key); restoring again fixes it.
+- **The password field's text can't be wiped from memory** (Compose holds a String); only the CharArray copy is.
+- **Recreating the activity mid-operation** (rotation, dark-mode switch) shows no result: a backup is cancelled and
+  its file deleted, a restore still completes. The password must be entered again.

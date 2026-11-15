@@ -167,6 +167,11 @@ fun HomePage(onOpen: (Page) -> Unit) {
             "Statistics",
             "Transcription and cleanup times and usage"
         ) { onOpen(Page.Statistics) }
+        NavCard(
+            R.drawable.lucide_database_backup,
+            "Backup and Restore",
+            "Save or restore settings and API keys"
+        ) { onOpen(Page.Backup) }
     }
 }
 

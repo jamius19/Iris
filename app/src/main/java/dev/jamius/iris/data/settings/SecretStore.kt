@@ -83,6 +83,24 @@ class SecretStore(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it.remove(secret.prefKey) }
     }
 
+    /** Every stored secret, decrypted. Throws if any can't be decrypted (export fails as a whole). */
+    suspend fun getAll(): Map<Secret, String> = dataStore.data.first().asMap().entries.associate { (key, value) ->
+        Secret(stringPreferencesKey(key.name)) to decrypt(value as String)
+    }
+
+    /**
+     * Replaces every secret with [values]. All values are encrypted first (a Keystore failure writes nothing); then
+     * every secret is removed, [writeSettings] runs, and [values] are stored in one edit. A failure at any point leaves
+     * at most keyless providers: never an orphaned key, and never a key paired with a provider other than the one it
+     * was saved for.
+     */
+    suspend fun replaceAll(values: Map<Secret, String>, writeSettings: suspend () -> Unit) {
+        val encrypted = values.mapValues { encrypt(it.value) }
+        dataStore.edit { it.clear() }
+        writeSettings()
+        dataStore.edit { prefs -> encrypted.forEach { (secret, ciphertext) -> prefs[secret.prefKey] = ciphertext } }
+    }
+
     private suspend fun encrypt(plain: String): String = withContext(Dispatchers.IO) {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, key)

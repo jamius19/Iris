@@ -83,3 +83,16 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Footer update check: opening the app shows "Version x · Checking for update", then "Up to date" (also
   while the repo has no release), or "Update available" in the failure colour once a release with a higher
   `v<versionName>` tag exists; tapping it opens the release page in the browser. Offline: only the version.
+
+## Backup and restore
+- Create Backup to local storage and to Drive; the file name is `iris-backup-<date>.irisbackup` (no `.bin` added).
+  Cancelling either picker shows nothing.
+- Restore that file after uninstall + reinstall: every page matches, every key works (one dictation per keyed
+  provider, one cleanup), custom providers' favicons and model lists load, the Soniox catalogue reloads.
+- Restore removes a key and a custom provider added after the backup; statistics and downloaded models stay.
+- Wrong password, a truncated copy and a non-Iris file (e.g. a photo) each show their message and change nothing.
+- Backup / restore time on a mid-range phone (KDF); buttons disabled while running; leaving the page mid-restore
+  still completes it.
+- Rotation with a picker open: the password is gone, the result asks for it again, no empty backup file is left.
+- Rotation while Creating… / Restoring…: no message; a backup leaves no file, a restore still completes.
+- TalkBack: "Password" field, "Show Password" / "Hide Password", buttons and outcome text are read.

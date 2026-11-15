@@ -18,9 +18,9 @@ Where each vendored or bundled piece came from. Update the row when bumping a ve
   ONNX Runtime 1.28.2. Maven Central has no `onnxruntime-android` 1.28.2, and 1.29.0 adds default-on telemetry.
 - **Sonic**: only the package line was changed (noted in its header).
 - **Inter** is the variable font; one instance per weight (400 / 500 / 600 / 800), opsz left at 14.
-- **Lucide**: SVGs converted by hand to vector drawables (viewport 24, white stroke tinted in Compose, circles and
-  rects converted to paths). Stroke widths are tuned per use size to match the Figma export. Several icons are
-  Feather-derived, hence the MIT block in the licence file.
+- **Lucide**: SVGs converted by hand to vector drawables (viewport 24, white stroke tinted in Compose, circles,
+  ellipses and rects converted to paths). Stroke widths are tuned per use size to match the Figma export. Several
+  icons are Feather-derived, hence the MIT block in the licence file.
 - **Brand marks** (`provider_*.xml`: Vercel, OpenRouter, OpenAI, Deepgram, Soniox, NVIDIA, Moonshine): path data
   copied from user-supplied SVGs. The marks belong to their owners; no licence file.
 - **Logo** (`iris_logo.xml`): converted from the designer's `iris_logo.svg`.

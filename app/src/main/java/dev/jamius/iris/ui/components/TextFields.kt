@@ -280,6 +280,7 @@ fun ApiKeyField(
         helperColor = if (isSet) colors.muted else colors.failure
     ) {
         SecureKeyShell(
+            label = LABEL_API_KEY,
             state = state,
             storedShown = isSet,
             placeholder = placeholder,
@@ -299,12 +300,13 @@ fun ApiKeyField(
 }
 
 /**
- * The API key box: a [BasicSecureTextField] (the eye shows the input while there is some), display-only dots while
- * [storedShown] and no input (TalkBack: "Saved"), and a trash ([onTrash]) when [trashDescription] is set. [onBlur]
- * runs when the field loses focus.
+ * The API key (or password) box: a [BasicSecureTextField] (the eye shows the input while there is some), display-only
+ * dots while [storedShown] and no input (TalkBack: "Saved"), and a trash ([onTrash]) when [trashDescription] is set.
+ * [onBlur] runs when the field loses focus. [label] names the field and its eye for TalkBack.
  */
 @Composable
 private fun SecureKeyShell(
+    label: String,
     state: TextFieldState,
     storedShown: Boolean,
     placeholder: String,
@@ -343,7 +345,7 @@ private fun SecureKeyShell(
                             focused = it.isFocused
                         }
                         .semantics {
-                            contentDescription = LABEL_API_KEY
+                            contentDescription = label
                             if (storedShown && !hasInput) stateDescription = "Saved"
                         },
                     textStyle = type.field.copy(color = colors.text),
@@ -362,7 +364,7 @@ private fun SecureKeyShell(
             if (hasInput) {
                 IconAction(
                     if (visible) R.drawable.lucide_eye_off else R.drawable.lucide_eye,
-                    contentDescription = if (visible) "Hide API key" else "Show API key",
+                    contentDescription = if (visible) "Hide $label" else "Show $label",
                     tint = colors.text,
                     width = 28.dp,
                     iconSize = 16.dp,
@@ -482,6 +484,7 @@ fun DraftApiKeyField(
         helperColor = if (storedShown) colors.muted else colors.failure
     ) {
         SecureKeyShell(
+            label = LABEL_API_KEY,
             state = state,
             storedShown = storedShown,
             placeholder = "Paste your API key",
@@ -503,6 +506,34 @@ fun DraftApiKeyField(
                 onRemoveStored()
             }
         }
+    }
+}
+
+/** A password draft (never saved, never seeded): masked with an eye toggle, no trash. */
+@Composable
+fun DraftPasswordField(
+    label: String,
+    state: TextFieldState,
+    placeholder: String,
+    helper: String,
+    error: String?,
+    onEdited: () -> Unit,
+) {
+    var visible by remember { mutableStateOf(false) }
+    OnEdited(state, onEdited)
+    FieldGroup(label, helper = helper, error = error) {
+        SecureKeyShell(
+            label = label,
+            state = state,
+            storedShown = false,
+            placeholder = placeholder,
+            hasError = error != null,
+            visible = visible,
+            onToggleVisible = { visible = !visible },
+            onBlur = {},
+            trashDescription = null,
+            onTrash = {}
+        )
     }
 }
 

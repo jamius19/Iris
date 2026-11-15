@@ -13,8 +13,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 class SettingsRepository(
@@ -215,6 +220,48 @@ class SettingsRepository(
 
     suspend fun clearApiKey(secret: Secret) {
         secretStore.clear(secret)
+    }
+
+    /** An encrypted backup of the settings and every API key (not statistics). Throws [BackupException]. */
+    suspend fun exportBackup(password: CharArray): ByteArray {
+        val prefs = dataStore.data.first()
+        val secrets = try {
+            secretStore.getAll()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Keystore errors never contain the key.
+            throw BackupException(KEY_UNREADABLE, e)
+        }
+        return withContext(Dispatchers.Default) {
+            val plain = encodeBackup(BackupContents(prefs, secrets))
+            try {
+                encryptBackup(plain, password)
+            } finally {
+                plain.fill(0)
+            }
+        }
+    }
+
+    /** Replaces all settings and API keys with [file]'s, after decrypting and validating all of it. */
+    suspend fun restoreBackup(file: ByteArray, password: CharArray) {
+        val contents = withContext(Dispatchers.Default) {
+            val payload = decryptBackup(file, password)
+            try {
+                decodeBackup(payload)
+            } finally {
+                payload.fill(0)
+            }
+        }
+        // Leaving the page mid-write can't stop between the store writes.
+        withContext(NonCancellable) {
+            secretStore.replaceAll(contents.secrets) {
+                dataStore.edit {
+                    it.clear()
+                    it += contents.prefs
+                }
+            }
+        }
     }
 
     private fun MutablePreferences.setPrompts(prompts: List<CleanupPrompt>) {

@@ -34,7 +34,7 @@ import dev.jamius.iris.ui.theme.IrisTheme
 
 /**
  * The design's small dark button ("Setup →"): hugs its text + 11 dp trailing icon (if any). [setup]: Home's Setup
- * buttons, white in dark mode.
+ * buttons, white in dark mode. Disabled: 38 % alpha, not clickable.
  */
 @Composable
 fun SmallButton(
@@ -43,13 +43,16 @@ fun SmallButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     setup: Boolean = false,
+    enabled: Boolean = true,
 ) {
     val colors = IrisTheme.colors
     val focusManager = LocalFocusManager.current
     val textColor = if (setup) colors.setupButtonText else colors.buttonText
     val pressOverlay = if (setup) colors.pressOverlayOnSetupButton else colors.pressOverlayOnButton
     Row(
-        modifier = modifier
+        modifier = Modifier
+            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            .then(modifier)
             .heightIn(min = 32.dp)
             .dropShadow(
                 ControlShape,
@@ -61,6 +64,7 @@ fun SmallButton(
             .clickable(
                 interactionSource = null,
                 indication = PressIndication(pressOverlay),
+                enabled = enabled,
                 role = Role.Button
             ) {
                 focusManager.clearFocus()
