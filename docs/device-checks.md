@@ -16,12 +16,20 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 
 ## Overlay
 - Rotation while Listening and Finalizing: bubble re-snaps, panel follows, session isn't lost.
-- Mic -> ✕ morph and pill slide are smooth on both edges; dark mode colours update while shown.
+- Waveform -> ✕ morph and pill slide are smooth on both edges; dark mode colours update while shown.
 - Dragging from the pill never stops, dragging from the ✕ never cancels; tapping the gap stops.
 - Near the IME / bottom the pill opens upward, and flips without a flicker when the IME shows or hides.
 - Re-show after focus loss mid-Finalizing restores spinner and panel without replayed animations.
 - Panel sliders apply live in another app; at 90 % width the panel stays on screen on both sides and in landscape.
 - TalkBack reads "Start / Cancel / Stop dictation" and double-tap works on the ✕ and the pill.
+- Show / hide: the bubble fades in blurred -> sharp and out sharp -> blurred, no hard edge, also with the pill out
+  and on both edges; rapid focus changes reverse smoothly. Android 12 and below: fade + zoom only.
+- Android 13+: taps ~16 dp beside the bubble and pill reach the app below; the circle sits where it did before;
+  landscape with the keyboard up and the bubble near the top shows the whole pill.
+- The waveform draws in on show and on return to rest (Done, error, ✕), un-draws on hide; it, the glyphs and the
+  pill look centred and proportionate in light and dark.
+- Leaving a field while Listening, Finalizing or on a tick / !: the bubble fades out as it looked. Returning
+  mid-fade shows the current state, no stale ✕.
 
 ## VAD and Speed (real voice)
 - First and last words aren't clipped, incl. speaking right after the tap and stopping right after the last word.
@@ -51,7 +59,7 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Whisper with `de` and with a blank language.
 - Nemotron: live text while recording; decode faster than real time on a mid-range phone (`Decoded X ms of audio
   in Y ms`, Y < X); the first word after the tap isn't clipped with Skip Silence off; last words kept at stop; a
-  5+ min dictation; ✕ then the mic again at once starts a new stream with no hang.
+  5+ min dictation; ✕ then the bubble again at once starts a new stream with no hang.
 - Parakeet load time on a mid-range phone, and Finalizing stays within the deadline.
 - Memory (`adb shell dumpsys meminfo dev.jamius.iris`) after preload and after the Unload Model delay
   (`Released <id>`). A changed delay applies mid-countdown; "Never" keeps it loaded.

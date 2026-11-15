@@ -1,7 +1,7 @@
 # Iris
 
 Android voice dictation app (Kotlin, Jetpack Compose, single `:app` module, package `dev.jamius.iris`).
-An AccessibilityService shows a bubble overlay when a text field is focused. Tap the mic to dictate: a pill with a
+An AccessibilityService shows a bubble overlay when a text field is focused. Tap the bubble to dictate: a pill with a
 live waveform slides out, the partial transcript streams in a panel beside the bubble. Tap the pill to stop: the
 transcript is finalized, filler words removed, optionally cleaned up by an LLM, then inserted at the cursor.
 STT is cloud (OpenAI, Vercel AI Gateway, Deepgram, Soniox) or on device (sherpa-onnx models downloaded in
@@ -92,6 +92,9 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
   would lose the dictation).
 - **Overlay is View-based**, not Compose (a Compose window in a service needs lifecycle owners). Remove windows
   with `removeViewImmediate` and keep `setCanPlayMoveAnimation(false)`, or frames flash and the button jumps.
+- **Bubble window margin** (API 33+): the stack window is `blurMarginPx` bigger on each side (blur room,
+  `FLAG_LAYOUT_NO_LIMITS`), with taps limited to the content by `setTouchableRegion`. Position by
+  `bubbleX` / `buttonY` (the button); `bubbleParams.x/y` is the window, not the button.
 - **Insertion quirks**: apps may report a placeholder as text with selection -1 (WhatsApp): paste instead of
   `SET_TEXT`. A keyboard-only field (ChatGPT) needs the node tree walked once to find the editable node.
 - **Inter weights**: build fonts with `InterFont` (platform `Font.Builder`), not Compose's `variationSettings`

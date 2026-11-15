@@ -63,6 +63,8 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
   no "Allow" dialog (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`): Play allows it only for a few app types; Setup opens
   App info. Only Unrestricted counts as OK, so a fresh install (Optimized by default) shows the row in the
   failure colour.
+- **No bubble blur below Android 13.** The blur needs a bigger transparent window around the bubble, and only
+  Android 13+ can stop that margin from catching taps meant for the app below (`setTouchableRegion`).
 
 ## Backup
 - **Restore replaces everything**: keys and settings not in the backup are removed. No confirmation (as deletes).

@@ -8,21 +8,25 @@ package dev.jamius.iris.overlay
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Outline
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PathMeasure
 import android.graphics.RectF
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.animation.LinearInterpolator
 import android.view.animation.PathInterpolator
 import androidx.core.animation.doOnEnd
+import androidx.core.graphics.PathParser
 import androidx.core.graphics.withSave
 import dev.jamius.iris.R
 import kotlin.math.roundToInt
 
 /** What the bubble shows. */
 enum class BubbleStatus {
-    /** Idle circle (contrasts with the theme) with a mic. */
+    /** Idle circle (contrasts with the theme) with the logo's waveform (drawn in when the bubble shows). */
     IDLE,
 
     /** Control circle with a ✕ (cancel); the overlay shows the pill below it. */
@@ -61,7 +65,6 @@ internal class BubbleView(context: Context) : View(context) {
     private var successColor = 0
     private var failureColor = 0
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val mic = icon(R.drawable.ic_mic)
     private val close = icon(R.drawable.ic_close)
     private val check = icon(R.drawable.ic_check)
     private val exclamation = icon(R.drawable.ic_exclamation)
@@ -76,6 +79,38 @@ internal class BubbleView(context: Context) : View(context) {
         val r = (ICON_DP - SPINNER_STROKE_DP) * density / 2
         set(center - r, center - r, center + r, center + r)
     }
+
+    // The waveform from iris_logo.xml, scaled to WAVE_WIDTH_DP wide (with its stroke) and centred in the view.
+    private val wave = PathParser.createPathFromPathData(WAVE_PATH)
+    private val waveScale: Float
+
+    init {
+        val bounds = RectF().also { wave.computeBounds(it, true) }
+        waveScale = WAVE_WIDTH_DP * density / (bounds.width() + WAVE_STROKE)
+        wave.transform(
+            Matrix().apply {
+                setTranslate(-bounds.centerX(), -bounds.centerY())
+                postScale(waveScale, waveScale)
+                postTranslate(sizePx / 2f, sizePx / 2f)
+            }
+        )
+    }
+
+    private val waveMeasure = PathMeasure(wave, false) // One contour. After the transform above.
+    private val waveSegment = Path() // Reused per frame.
+    private val wavePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = WAVE_STROKE * waveScale
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+
+    /** How much of the idle waveform is drawn, along its length (0..1); [drawWave] animates it. */
+    private var waveDrawn = 0f
+    private var waveAnimator: ValueAnimator? = null
+
+    /** The last [drawWave] call drew the wave in: the bubble is shown, not hiding. */
+    private var waveShown = false
 
     private val spin = ValueAnimator.ofFloat(0f, 1f).apply {
         duration = 900
@@ -131,6 +166,11 @@ internal class BubbleView(context: Context) : View(context) {
                     to = value
                     reversed = false
                     morph.start()
+                    // Back at rest while shown: the wave draws itself in again (instead of growing in, see onDraw).
+                    if (value == BubbleStatus.IDLE && waveShown) {
+                        waveDrawn = 0f
+                        drawWave(true)
+                    }
                 }
             }
             updateAnimations()
@@ -150,6 +190,29 @@ internal class BubbleView(context: Context) : View(context) {
         }
     }
 
+    /**
+     * Draws the waveform in, left to right, or un-draws it, from where it is. Only animates at rest: in any other
+     * status it jumps, so a re-show mid-session doesn't replay it and a hide while listening doesn't draw one.
+     */
+    fun drawWave(drawn: Boolean) {
+        waveShown = drawn
+        waveAnimator?.cancel()
+        val target = if (drawn) 1f else 0f
+        if (status != BubbleStatus.IDLE) {
+            waveDrawn = target
+            return
+        }
+        waveAnimator = ValueAnimator.ofFloat(waveDrawn, target).apply {
+            duration = if (drawn) WAVE_IN_MS else WAVE_OUT_MS
+            interpolator = WAVE_EASE
+            addUpdateListener {
+                waveDrawn = it.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
+    }
+
     /** Re-reads the colours, e.g. after a dark mode switch. */
     fun onConfigurationChanged() {
         loadColors()
@@ -164,7 +227,7 @@ internal class BubbleView(context: Context) : View(context) {
         val controlIcon = context.getColor(R.color.bubble_control_icon)
         spinnerPaint.color = controlIcon
         close.setTint(controlIcon)
-        mic.setTint(context.getColor(R.color.bubble_idle_icon))
+        wavePaint.color = context.getColor(R.color.bubble_idle_icon)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -183,9 +246,10 @@ internal class BubbleView(context: Context) : View(context) {
         // the curve's slow tail.
         canvas.drawCircle(center, center, radius * (t / REVEAL_END).coerceAtMost(1f), fillPaint)
         // The old content shrinks and fades out, the new grows and fades in; the ✕ turns in from -90° and out to 90°.
+        // The idle wave doesn't grow: it draws itself in (started in the status setter).
         // from != to while t < 1: one drawable drawn twice per frame would use its last alpha for both.
         if (t < 1f) drawContent(canvas, from, 1 - t, 1 - 0.4f * t, 90 * t)
-        drawContent(canvas, to, t, 0.6f + 0.4f * t, -90 * (1 - t))
+        drawContent(canvas, to, t, if (to == BubbleStatus.IDLE) 1f else 0.6f + 0.4f * t, -90 * (1 - t))
     }
 
     private fun drawContent(canvas: Canvas, status: BubbleStatus, alpha: Float, scale: Float, degrees: Float) {
@@ -204,12 +268,18 @@ internal class BubbleView(context: Context) : View(context) {
                     close.alpha = alpha255
                     close.draw(this)
                 }
-                BubbleStatus.IDLE, BubbleStatus.SUCCESS, BubbleStatus.FAILURE -> {
-                    val icon = when (status) {
-                        BubbleStatus.IDLE -> mic
-                        BubbleStatus.SUCCESS -> check
-                        else -> exclamation
+                BubbleStatus.IDLE -> {
+                    wavePaint.alpha = alpha255
+                    if (waveDrawn >= 1f) {
+                        drawPath(wave, wavePaint)
+                    } else if (waveDrawn > 0f) {
+                        waveSegment.rewind()
+                        waveMeasure.getSegment(0f, waveMeasure.length * waveDrawn, waveSegment, true)
+                        drawPath(waveSegment, wavePaint)
                     }
+                }
+                BubbleStatus.SUCCESS, BubbleStatus.FAILURE -> {
+                    val icon = if (status == BubbleStatus.SUCCESS) check else exclamation
                     icon.alpha = alpha255
                     icon.draw(this)
                 }
@@ -238,6 +308,8 @@ internal class BubbleView(context: Context) : View(context) {
     override fun onDetachedFromWindow() {
         morph.end() // A re-attach draws the final state.
         spin.cancel()
+        waveAnimator?.cancel()
+        waveDrawn = 0f // A re-added bubble draws the wave in from nothing.
         super.onDetachedFromWindow()
     }
 
@@ -258,13 +330,28 @@ internal class BubbleView(context: Context) : View(context) {
     }
 
     private companion object {
-        const val RADIUS_DP = 20
+        const val RADIUS_DP = 19
         const val MARGIN_DP = 6
         const val SHADOW_ROOM_DP = 6
-        const val ICON_DP = 20
+        const val ICON_DP = 19
         const val SPINNER_STROKE_DP = 2.5f
         const val SPINNER_SWEEP = 270f
         const val MORPH_MS = 250L
         const val REVEAL_END = 0.8f
+
+        /** The last path of iris_logo.xml (the waveform), in its path units. */
+        const val WAVE_PATH = "M10.5,83.21c8.78,0,15.9-5.88,15.9-13.13v-26.27c0-7.25,7.12-13.13,15.9-13.13" +
+            "s15.9,5.88,15.9,13.13v85.36c0,7.25,7.12,13.13,15.9,13.13s15.9-5.88,15.9-13.13V24.12" +
+            "c0-7.25,7.12-13.13,15.9-13.13s15.9,5.88,15.9,13.13v85.36c0,7.25,7.12,13.13,15.9,13.13" +
+            "s15.9-5.88,15.9-13.13v-26.27c0-7.25,7.12-13.13,15.9-13.13"
+
+        /** The logo's stroke width, in path units. */
+        const val WAVE_STROKE = 21f
+        const val WAVE_WIDTH_DP = 21f
+        const val WAVE_IN_MS = 500L
+
+        /** Matches BubbleOverlay's STACK_OUT_MS: the window is removed at its end. */
+        const val WAVE_OUT_MS = 200L
+        val WAVE_EASE = PathInterpolator(0.4f, 0f, 0.2f, 1f)
     }
 }

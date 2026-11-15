@@ -54,9 +54,9 @@ internal fun panelMaxWidth(displayWidth: Int, widthPercent: Int, area: Area, bub
 
 /**
  * Puts the panel on the bubble's side facing screen center: left of a right-edge bubble, right of a left-edge one.
- * A one-line panel is as tall as the bubble's circle and lines up with it. Taller panels keep the circle's top edge
- * and grow down, unless [panelMaxHeight] wouldn't fit above the [visible] area's bottom (the IME or the usable area's
- * bottom): then they keep the circle's bottom edge and grow up. If that wouldn't fit below [visible]'s top either,
+ * The panel keeps the circle's top edge and grows down (even one line is taller than the circle), unless
+ * [panelMaxHeight] wouldn't fit above the [visible] area's bottom (the IME or the usable area's bottom): then it
+ * keeps the circle's bottom edge and grows up. If that wouldn't fit below [visible]'s top either,
  * the panel's top sits on [visible]'s top and it grows down. With [growUp] (the pill opens upward) the panel skips
  * growing down: it keeps the circle's bottom edge if it fits, else its top sits on [visible]'s top.
  */

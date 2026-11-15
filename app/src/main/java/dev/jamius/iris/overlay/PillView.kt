@@ -31,7 +31,7 @@ internal class PillView(context: Context) : View(context) {
     private val margin = MARGIN_DP * density
     private val pillWidth = PILL_WIDTH_DP * density
     private val pillHeight = PILL_HEIGHT_DP * density
-    private val radius = 20f * density
+    private val radius = pillWidth / 2
     private val travel = (PILL_HEIGHT_DP + GAP_DP) * density
     private val widthPx = (pillWidth + 2 * margin).roundToInt()
 
@@ -143,12 +143,12 @@ internal class PillView(context: Context) : View(context) {
 
     private companion object {
         const val MARGIN_DP = 6f
-        const val PILL_WIDTH_DP = 40f
-        const val PILL_HEIGHT_DP = 78f
+        const val PILL_WIDTH_DP = 38f
+        const val PILL_HEIGHT_DP = 74f
         const val GAP_DP = 6f
-        const val BAR_STROKE_DP = 5f
-        const val BAR_MAX_DP = 23.5f
-        const val BAR_PADDING_DP = 17f
+        const val BAR_STROKE_DP = 4.75f
+        const val BAR_MAX_DP = 22.3f
+        const val BAR_PADDING_DP = 16.15f
         const val ATTACK_MS = 40f
         const val RELEASE_MS = 200f
         const val SETTLED = 0.001f
