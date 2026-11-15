@@ -81,7 +81,8 @@ fun CustomWordsPage(settings: Settings, repository: SettingsRepository, saver: S
                         "the wrong word.",
                     checked = settings.correctSimilarWords,
                     onSave = { repository.setCorrectSimilarWords(it) },
-                    saver = saver
+                    saver = saver,
+                    icon = R.drawable.lucide_ear
                 )
             }
         }
