@@ -233,7 +233,7 @@ class BubbleOverlay(
         stackAnimator?.cancel()
         stackAnimator = ValueAnimator.ofFloat(stack.alpha, if (enter) 1f else 0f).apply {
             duration = if (enter) STACK_IN_MS else STACK_OUT_MS
-            interpolator = if (enter) EMPHASIZED_DECELERATE else EMPHASIZED_ACCELERATE
+            interpolator = if (enter) STACK_IN_EASE else EMPHASIZED_ACCELERATE
             addUpdateListener {
                 val fraction = it.animatedValue as Float
                 val scale = STACK_MIN_SCALE + (1 - STACK_MIN_SCALE) * fraction
@@ -665,7 +665,7 @@ class BubbleOverlay(
         const val PANEL_IN_MS = 250L
         const val PANEL_OUT_MS = 200L
         const val PANEL_MIN_SCALE = 0.92f
-        const val STACK_IN_MS = 200L
+        const val STACK_IN_MS = 350L
         const val STACK_OUT_MS = 200L
         const val STACK_MIN_SCALE = 0.85f
         const val STACK_MAX_BLUR_DP = 16f
@@ -673,6 +673,8 @@ class BubbleOverlay(
         const val WRAP = FrameLayout.LayoutParams.WRAP_CONTENT
         val EMPHASIZED_DECELERATE = PathInterpolator(0.05f, 0.7f, 0.1f, 1f)
         val EMPHASIZED_ACCELERATE = PathInterpolator(0.3f, 0f, 0.8f, 0.15f)
+        // Gentler than EMPHASIZED_DECELERATE (about half done at 30% vs 90%), so the blur visibly clears.
+        val STACK_IN_EASE = PathInterpolator(0.25f, 0.1f, 0.25f, 1f)
         val EASE_IN_OUT = PathInterpolator(0.65f, 0f, 0.35f, 1f)
     }
 }
