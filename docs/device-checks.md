@@ -136,7 +136,8 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
   Transcription note; the Custom Words card shows "Not sent to this model. Only the correction and LLM cleanup
   apply." with the correction and AI Cleanup on, "...Only the correction applies." with cleanup off, "...Only the
   LLM cleanup applies." with the correction off, "Not sent to this model, so custom words have no effect." with
-  both off; the card still opens.
+  both off (failure colour, SemiBold); the card still opens.
+- Custom Words toggle off, any model: the card shows "Feature is disabled." in muted text and no other note.
 - Post Processing with the prompt field focused and edited, tap the Custom Words card: the edit is saved and the
   keyboard closes.
 - `whisper-1` with Skip silence off and one short word dictated: the "Glossary:" prompt is not returned as the

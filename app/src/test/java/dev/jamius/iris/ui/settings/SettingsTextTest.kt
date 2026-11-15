@@ -295,23 +295,33 @@ class SettingsTextTest {
 
     @Test
     fun customWordsUnsentNoteNamesWhatStillApplies() {
-        assertNull(customWordsUnsentNote(sent = true, correctionEnabled = true, cleanupEnabled = true))
-        assertNull(customWordsUnsentNote(sent = true, correctionEnabled = false, cleanupEnabled = false))
+        assertNull(customWordsUnsentNote(enabled = true, sent = true, correctionEnabled = true, cleanupEnabled = true))
+        assertNull(
+            customWordsUnsentNote(enabled = true, sent = true, correctionEnabled = false, cleanupEnabled = false)
+        )
         assertEquals(
             "Not sent to this model. Only the correction and LLM cleanup apply.",
-            customWordsUnsentNote(sent = false, correctionEnabled = true, cleanupEnabled = true)
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = true, cleanupEnabled = true)
         )
         assertEquals(
             "Not sent to this model. Only the correction applies.",
-            customWordsUnsentNote(sent = false, correctionEnabled = true, cleanupEnabled = false)
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = true, cleanupEnabled = false)
         )
         assertEquals(
             "Not sent to this model. Only the LLM cleanup applies.",
-            customWordsUnsentNote(sent = false, correctionEnabled = false, cleanupEnabled = true)
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = false, cleanupEnabled = true)
         )
         assertEquals(
             "Not sent to this model, so custom words have no effect.",
-            customWordsUnsentNote(sent = false, correctionEnabled = false, cleanupEnabled = false)
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = false, cleanupEnabled = false)
+        )
+        assertEquals(
+            "Feature is disabled.",
+            customWordsUnsentNote(enabled = false, sent = false, correctionEnabled = false, cleanupEnabled = false)
+        )
+        assertEquals(
+            "Feature is disabled.",
+            customWordsUnsentNote(enabled = false, sent = true, correctionEnabled = true, cleanupEnabled = true)
         )
     }
 }

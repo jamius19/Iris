@@ -132,9 +132,15 @@ fun PostProcessingPage(
             R.drawable.lucide_spell_check,
             "Custom Words (Beta)",
             "Names and terms Iris should spell right",
-            note = customWordsUnsentNote(customWordsSent, settings.correctSimilarWords, settings.cleanupEnabled),
-            // The "no effect" note: nothing uses the words.
-            noteIsWarning = !customWordsSent && !settings.correctSimilarWords && !settings.cleanupEnabled,
+            note = customWordsUnsentNote(
+                settings.customWordsEnabled,
+                customWordsSent,
+                settings.correctSimilarWords,
+                settings.cleanupEnabled
+            ),
+            // The "no effect" note: the feature is on, but nothing uses the words.
+            noteIsWarning = settings.customWordsEnabled && !customWordsSent && !settings.correctSimilarWords &&
+                !settings.cleanupEnabled,
             onClick = onOpenCustomWords
         )
         Card(verticalPadding = 15.dp) {

@@ -221,10 +221,16 @@ fun customWordsSttNote(settings: Settings, sent: Boolean): String? =
     }
 
 /**
- * The Custom Words card's note when the selected model doesn't get them ([sent] false), naming what still applies,
- * else null.
+ * The Custom Words card's note: that the feature is off, or, when the selected model doesn't get the words
+ * ([sent] false), what still applies; else null.
  */
-fun customWordsUnsentNote(sent: Boolean, correctionEnabled: Boolean, cleanupEnabled: Boolean): String? = when {
+fun customWordsUnsentNote(
+    enabled: Boolean,
+    sent: Boolean,
+    correctionEnabled: Boolean,
+    cleanupEnabled: Boolean
+): String? = when {
+    !enabled -> "Feature is disabled."
     sent -> null
     correctionEnabled && cleanupEnabled -> "Not sent to this model. Only the correction and LLM cleanup apply."
     correctionEnabled -> "Not sent to this model. Only the correction applies."
