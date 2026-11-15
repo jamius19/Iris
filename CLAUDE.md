@@ -26,8 +26,8 @@ decides which audio is sent; "Speed" time-stretches it to cut billed audio.
 | Package | Responsibility |
 |---|---|
 | (root) | `IrisApp`, `AppContainer` (DI, app scope, picks STT and cleanup providers), `MainActivity` (settings UI) |
-| `data.settings` | `Settings` model, `SettingsRepository` (DataStore), `SecretStore` (Keystore AES/GCM) |
-| `ui.settings` | `SettingsApp` (navigation), the five pages, `ModelCatalogs`, `SettingsText` (pure copy helpers) |
+| `data.settings` | `Settings` model, `SettingsRepository` (DataStore), `SecretStore` (Keystore AES/GCM), `Backup` |
+| `ui.settings` | `SettingsApp` (navigation), the six pages, `ModelCatalogs`, `SettingsText` (pure copy helpers) |
 | `ui.components` / `ui.theme` | Design system (cards, fields, dropdowns, slider, `Saver`); `IrisTheme` colours + type |
 | `audio` | `AudioRecorder` (PCM16 mono), `SileroVad`, `SpeechGate` (pure VAD gate), `timeStretched` (Sonic) |
 | `stt` | `SpeechToTextProvider`; `stt.openai` / `vercel` / `deepgram` / `soniox` / `ondevice`; `Wav.kt` (uploads) |
@@ -57,6 +57,8 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
 - Dictation is never lost: any cleanup or insertion failure inserts or copies the raw transcript with a notice.
 - Settings autosave on blur (no Save buttons), except the custom cleanup provider form.
 - Custom cleanup providers are HTTPS only; a changed base URL host needs a new key (never send a key elsewhere).
+- Backup and Restore: password file (PBKDF2-SHA256 600k + AES-256-GCM, platform crypto) through SAF; restore
+  replaces all settings and API keys, never statistics or downloaded models.
 - Accepted trade-offs that can look like bugs are listed in `docs/decisions.md`: check it before "fixing" one.
 
 ## Gotchas
@@ -131,5 +133,5 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
 
 ## Status
 CP1-CP18 are done (settings, overlay, OpenAI/Gateway/Deepgram/Soniox STT, VAD, speed-up, cleanup providers,
-settings redesign, on-device STT incl. streaming, statistics, filler words). Real-voice device checks are still
-pending for CP6 onwards.
+settings redesign, on-device STT incl. streaming, statistics, filler words), plus backup and restore. Real-voice
+device checks are still pending for CP6 onwards.

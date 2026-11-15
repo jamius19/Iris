@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,10 +50,10 @@ import dev.jamius.iris.ui.theme.IrisTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-enum class Page { Home, Transcription, PostProcessing, Appearance, Statistics }
+enum class Page { Home, Transcription, PostProcessing, Appearance, Statistics, Backup }
 
 /**
- * The settings UI: Home and its four sub-pages (own navigation state, slide transitions, predictive back),
+ * The settings UI: Home and its five sub-pages (own navigation state, slide transitions, predictive back),
  * the model catalogues and their load triggers. Leaving a page, the app (ON_STOP) or tapping empty space clears focus,
  * which commits a focused text field.
  */
@@ -78,7 +79,11 @@ fun SettingsApp(
     val stats = statistics.stats.collectAsState(initial = null).value
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
-    val catalogs = remember { ModelCatalogs(scope, gatewayModels, openRouterModels, openAiModels, customModels) }
+    // A restore starts a fresh instance, so the effects below reload whatever the restored settings select.
+    var catalogGeneration by remember { mutableIntStateOf(0) }
+    val catalogs = remember(catalogGeneration) {
+        ModelCatalogs(scope, gatewayModels, openRouterModels, openAiModels, customModels)
+    }
 
     // Gateway catalog: when the app opens with Gateway cleanup or Gateway transcription on, and when either is turned
     // on before it has loaded.
@@ -86,23 +91,23 @@ fun SettingsApp(
     val custom = settings?.activeCustomCleanup
     val cleanupGateway = cleanupEnabled && settings?.cleanupOpenRouter != true && custom == null
     val sttGateway = settings?.sttGateway == true
-    LaunchedEffect(cleanupGateway, sttGateway) {
+    LaunchedEffect(catalogs, cleanupGateway, sttGateway) {
         if ((cleanupGateway || sttGateway) && catalogs.gatewayModels == null) catalogs.loadGateway()
     }
     // OpenRouter catalog (public, no key): when OpenRouter cleanup is on.
     val cleanupOpenRouter = cleanupEnabled && settings?.cleanupOpenRouter == true
-    LaunchedEffect(cleanupOpenRouter) {
+    LaunchedEffect(catalogs, cleanupOpenRouter) {
         if (cleanupOpenRouter && catalogs.openRouterModels == null) catalogs.loadOpenRouter()
     }
     // The selected custom provider's list (with its key): when it is selected with cleanup on.
-    LaunchedEffect(cleanupEnabled, custom?.id) {
+    LaunchedEffect(catalogs, cleanupEnabled, custom?.id) {
         if (cleanupEnabled && custom != null && catalogs.customModelsFor(custom.id) == null) catalogs.loadCustom(custom)
     }
     // OpenAI list: when OpenAI transcription is selected. Without a key nothing is requested and the error asks for
     // one.
     val sttOpenAi = settings != null && !settings.sttGateway && !settings.sttDeepgram && !settings.sttSoniox &&
         !settings.sttOnDevice
-    LaunchedEffect(sttOpenAi) {
+    LaunchedEffect(catalogs, sttOpenAi) {
         if (sttOpenAi && catalogs.openAiModels == null) catalogs.loadOpenAi()
     }
     // Soniox: when it is selected, if not loaded (or loading) yet.
@@ -185,6 +190,7 @@ fun SettingsApp(
                     )
                     Page.Appearance -> AppearancePage(settings, repository, saver, onBack = back)
                     Page.Statistics -> StatisticsPage(stats, statistics::reset, onBack = back)
+                    Page.Backup -> BackupPage(repository, onRestored = { catalogGeneration++ }, onBack = back)
                 }
             }
         }

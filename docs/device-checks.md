@@ -83,3 +83,25 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Footer update check: opening the app shows "Version x · Checking for update", then "Up to date" (also
   while the repo has no release), or "Update available" in the failure colour once a release with a higher
   `v<versionName>` tag exists; tapping it opens the release page in the browser. Offline: only the version.
+- Footer re-check: tapping "Up to date" shows "Checking for update", then the new result; TalkBack reads it as a
+  button with "Check for update".
+
+## Backup and restore
+- Create Backup to local storage and to Drive; the file name is `iris-backup-<date>.irisbackup` (no `.bin` added).
+  Cancelling either picker shows nothing (a cancelled restore picker keeps any earlier selection).
+- Create Backup is disabled until its password is entered. Restore starts with only Choose Backup File; picking a
+  file shows its name, a password field and Restore Backup (disabled until a password is entered).
+- Success clears the backup password; a restore resets the card to Choose Backup File with its password cleared.
+  A wrong restore password keeps the file and the password for a retry.
+- Restore that file after uninstall + reinstall: every page matches, every key works (one dictation per keyed
+  provider, one cleanup), custom providers' favicons and model lists load, the Soniox catalogue reloads.
+- Restore removes a key and a custom provider added after the backup; statistics and downloaded models stay.
+- Wrong password, a truncated copy and a non-Iris file (e.g. a photo) each show their message and change nothing.
+- Backup / restore time on a mid-range phone (KDF); buttons disabled while running; leaving the page mid-restore
+  still completes it.
+- Rotation with the backup picker open: the password is gone, the result asks for it again, no empty backup file is
+  left. Rotation with the restore picker open: the picked file is shown, its password must be entered.
+- Rotation after picking a restore file: the card is back to Choose Backup File (nothing is saved).
+- Rotation while Creating… / Restoring…: no message; a backup leaves no file, a restore still completes.
+- TalkBack: both "Password" fields, "Show Password" / "Hide Password", the selected file name, buttons and outcome
+  text are read.
