@@ -119,6 +119,15 @@ class DeepgramSpeechToTextTest {
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)
+    fun customWordsAreSentAsKeyterms() = runBlocking {
+        upgrade(onCloseStream = { socket -> socket.send(METADATA) })
+
+        stt().transcribe(flowOf(byteArrayOf(1, 2)), "nova-3", "", TIMEOUT_MS, {}, listOf("Deepgram", "Jamius Siam"))
+
+        assertEquals(listOf("Deepgram", "Jamius Siam"), server.takeRequest().url.queryParameterValues("keyterm"))
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
     fun serverCloseAfterCloseStreamReturnsTheFinals() = runBlocking {
         upgrade(onCloseStream = { socket ->
             socket.send(result("Bye.", isFinal = true))
@@ -320,6 +329,9 @@ class DeepgramSpeechToTextTest {
         assertTrue(stt.streams)
         assertTrue(stt.liveText("nova-3"))
         assertEquals(16_000, stt.sampleRate("nova-3"))
+        assertTrue(stt.takesCustomWords("nova-3"))
+        assertTrue(stt.takesCustomWords("nova-3-medical"))
+        assertFalse(stt.takesCustomWords("nova-2"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

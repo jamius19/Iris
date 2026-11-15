@@ -53,12 +53,15 @@ class OpenAiFileTranscription(
 
     override fun sampleRate(model: String): Int = SAMPLE_RATE
 
+    override fun takesCustomWords(model: String): Boolean = usesKeywords(model) || takesPrompt(model)
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String>,
     ): String {
         val key = apiKey()?.takeIf { it.isNotBlank() }
             ?: throw SttException("Add your OpenAI API key in Iris settings")
@@ -67,19 +70,28 @@ class OpenAiFileTranscription(
         val stoppedAt = System.nanoTime()
         val parts = splitAtPauses(chunks, maxPartBytes, SPLIT_SEARCH_BYTES)
         var text = ""
-        for (part in parts) text = joined(text, upload(key, wavBytes(part, SAMPLE_RATE), model, language, timeoutMs))
+        for (part in parts) {
+            text = joined(text, upload(key, wavBytes(part, SAMPLE_RATE), model, language, timeoutMs, customWords))
+        }
         val kb = chunks.sumOf { it.size } / 1024
         Log.d(TAG, "Timing: upload $kb KB in ${parts.size} part(s), stop->response ${elapsedMs(stoppedAt)} ms")
         return text
     }
 
     /** Uploads one WAV file and returns its trimmed text. */
-    private suspend fun upload(key: String, wav: ByteArray, model: String, language: String, timeoutMs: Long): String {
+    private suspend fun upload(
+        key: String,
+        wav: ByteArray,
+        model: String,
+        language: String,
+        timeoutMs: Long,
+        words: List<String>,
+    ): String {
         val audioMs = (wav.size - WAV_HEADER_BYTES) * 1000L / (SAMPLE_RATE * 2)
         val client = httpClient.newBuilder()
             .readTimeout(uploadReadTimeoutMs(timeoutMs, audioMs), MILLISECONDS)
             .build()
-        val body = SentBody(transcriptionForm(wav, model, language))
+        val body = SentBody(transcriptionForm(wav, model, language, words))
         val request = Request.Builder().url(url).header("Authorization", "Bearer $key").post(body).build()
         val (code, response) = try {
             client.newCall(request).await()
@@ -137,9 +149,15 @@ internal const val TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcr
 
 /**
  * The multipart form for one file: `file` (`audio.wav`), `model`, `response_format=json`, and the language when set:
- * `languages[]` for models that take the list, else `language`.
+ * `languages[]` for models that take the list, else `language`. [words] (custom words) go in as one `keywords[]` part
+ * each or as a `prompt`, as the model takes them ([usesKeywords], [takesPrompt]).
  */
-internal fun transcriptionForm(wav: ByteArray, model: String, language: String): MultipartBody =
+internal fun transcriptionForm(
+    wav: ByteArray,
+    model: String,
+    language: String,
+    words: List<String> = emptyList(),
+): MultipartBody =
     MultipartBody.Builder()
         .setType(MultipartBody.FORM)
         .addFormDataPart("file", "audio.wav", wav.toRequestBody("audio/wav".toMediaType()))
@@ -150,6 +168,11 @@ internal fun transcriptionForm(wav: ByteArray, model: String, language: String):
                 language.isBlank() -> Unit
                 usesLanguageList(model) -> addFormDataPart("languages[]", language)
                 else -> addFormDataPart("language", language)
+            }
+            when {
+                words.isEmpty() -> Unit
+                usesKeywords(model) -> words.forEach { addFormDataPart("keywords[]", it) }
+                takesPrompt(model) -> addFormDataPart("prompt", glossaryPrompt(words))
             }
         }
         .build()

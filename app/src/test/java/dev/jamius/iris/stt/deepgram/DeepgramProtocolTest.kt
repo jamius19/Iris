@@ -48,6 +48,56 @@ class DeepgramProtocolTest {
     }
 
     @Test
+    fun customWordsAreKeytermsOnNova3() {
+        for (model in listOf("nova-3", "nova-3-medical")) {
+            val url = listenUrl(LISTEN_URL, model, "en", false, listOf("Deepgram", "Jamius Siam"))
+
+            assertEquals(listOf("Deepgram", "Jamius Siam"), url.queryParameterValues("keyterm"))
+            assertEquals(
+                "keyterm=Deepgram&keyterm=Jamius%20Siam&redact_usage=true",
+                url.encodedQuery!!.substringAfter("punctuate=true&")
+            )
+        }
+    }
+
+    @Test
+    fun noKeytermsMeansNoRedactUsage() {
+        assertNull(listenUrl(LISTEN_URL, "nova-3", "en", streaming = true).queryParameter("redact_usage"))
+        assertNull(listenUrl(LISTEN_URL, "nova-2", "en", false, listOf("Deepgram")).queryParameter("redact_usage"))
+    }
+
+    @Test
+    fun nova2GetsNoKeyterms() {
+        val url = listenUrl(LISTEN_URL, "nova-2", "en", streaming = true, keyterms = listOf("Deepgram"))
+
+        assertEquals(emptyList<String>(), url.queryParameterValues("keyterm"))
+        assertEquals(0, droppedKeyterms("nova-2", List(100) { "x".repeat(60) }))
+    }
+
+    @Test
+    fun keytermsOverTheTokenBudgetAreDropped() {
+        // 60 characters = 30 estimated tokens: 15 fit in 450.
+        val words = List(100) { "$it".padEnd(60, 'x') }
+
+        assertEquals(words.take(15), deepgramKeyterms(words))
+        assertEquals(words.take(15), listenUrl(LISTEN_URL, "nova-3", "", false, words).queryParameterValues("keyterm"))
+        assertEquals(85, droppedKeyterms("nova-3", words))
+        assertEquals(0, droppedKeyterms("nova-3", listOf("Deepgram")))
+    }
+
+    @Test
+    fun noKeytermsIsTodaysUrl() {
+        assertEquals(
+            listenUrl(LISTEN_URL, "nova-3", "en", streaming = true),
+            listenUrl(LISTEN_URL, "nova-3", "en", streaming = true, keyterms = emptyList())
+        )
+        assertEquals(
+            setOf("model", "language", "smart_format", "punctuate"),
+            listenUrl(LISTEN_URL, "nova-3", "", streaming = false, keyterms = emptyList()).queryParameterNames
+        )
+    }
+
+    @Test
     fun modelIdIsEncoded() {
         val url = listenUrl(LISTEN_URL, "nova 3&x=1", "en", streaming = false)
 

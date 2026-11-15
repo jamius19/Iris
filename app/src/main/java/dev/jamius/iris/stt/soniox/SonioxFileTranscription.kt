@@ -52,12 +52,15 @@ class SonioxFileTranscription(
 
     override fun sampleRate(model: String): Int = SONIOX_SAMPLE_RATE
 
+    override fun takesCustomWords(model: String): Boolean = true
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String>,
     ): String {
         val key = apiKey()?.takeIf { it.isNotBlank() }
             ?: throw SttException("Add your Soniox API key in Iris settings")
@@ -81,7 +84,7 @@ class SonioxFileTranscription(
             val uploaded = client.fetch(request(key, url("v1/files")).post(upload).build(), upload)
             val uploadedId = parseSonioxId(uploaded) ?: throw SttException(UNEXPECTED)
             fileId = uploadedId
-            val create = sonioxCreateTranscriptionBody(model, uploadedId, hints, strict)
+            val create = sonioxCreateTranscriptionBody(model, uploadedId, hints, strict, customWords)
                 .toRequestBody("application/json".toMediaType())
             val created = client.fetch(request(key, url("v1/transcriptions")).post(create).build())
             val id = parseSonioxId(created) ?: throw SttException(UNEXPECTED)

@@ -6,6 +6,7 @@
 package dev.jamius.iris.stt.openai
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -58,6 +59,47 @@ class RealtimeProtocolTest {
         val transcribe = sessionUpdate("gpt-transcribe", "fr")
         assertTrue(""""languages":["fr"]""" in transcribe)
         assertFalse(""""language":""" in transcribe)
+    }
+
+    /** The `transcription` object of [message]. */
+    private fun transcription(message: String) =
+        Json.parseToJsonElement(message).let {
+            val input = it.jsonObject["session"]!!.jsonObject["audio"]!!.jsonObject["input"]!!.jsonObject
+            input["transcription"]!!.jsonObject
+        }
+
+    @Test
+    fun customWordsGoAsKeywordsForTheGptTranscribeModels() {
+        listOf("gpt-live-transcribe", "gpt-transcribe").forEach { model ->
+            assertJson(
+                """{"model":"$model","keywords":["Deepgram","Jamius Siam"]}""",
+                transcription(sessionUpdate(model, "", listOf("Deepgram", "Jamius Siam"))).toString()
+            )
+        }
+    }
+
+    @Test
+    fun customWordsGoAsAPromptForWhisperAndGpt4o() {
+        listOf("whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe-2025-12-15").forEach { model ->
+            assertJson(
+                """{"model":"$model","prompt":"Glossary: A, B"}""",
+                transcription(sessionUpdate(model, "", listOf("A", "B"))).toString()
+            )
+        }
+    }
+
+    @Test
+    fun customWordsAreLeftOutForModelsWithoutAnOption() {
+        listOf("gpt-4o-transcribe-diarize", "gpt-realtime-whisper", "my-model").forEach { model ->
+            assertJson("""{"model":"$model"}""", transcription(sessionUpdate(model, "", listOf("A"))).toString())
+        }
+    }
+
+    @Test
+    fun noCustomWordsIsTodaysMessage() {
+        listOf("gpt-live-transcribe", "whisper-1").forEach { model ->
+            assertJson("""{"model":"$model"}""", transcription(sessionUpdate(model, "", emptyList())).toString())
+        }
     }
 
     @Test

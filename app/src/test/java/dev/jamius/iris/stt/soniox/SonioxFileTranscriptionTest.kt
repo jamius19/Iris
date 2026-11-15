@@ -73,7 +73,8 @@ class SonioxFileTranscriptionTest {
         audio: Flow<ByteArray> = flowOf(CHUNK),
         language: String = "",
         timeoutMs: Long = TIMEOUT_MS,
-    ) = transcribe(audio, "stt-async-v6", language, timeoutMs) { error("No live text") }
+        words: List<String> = emptyList(),
+    ) = transcribe(audio, "stt-async-v6", language, timeoutMs, { error("No live text") }, words)
 
     private fun failure(block: suspend () -> Unit): SttException =
         assertThrows(SttException::class.java) { runBlocking { block() } }
@@ -151,6 +152,23 @@ class SonioxFileTranscriptionTest {
                 Json.parseToJsonElement(create.body!!.utf8())
             )
         }
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
+    fun customWordsGoInTheContext() = runBlocking {
+        uploadAndCreate()
+        on("GET", "/v1/transcriptions/t1", job("completed"))
+        on("GET", "/v1/transcriptions/t1/transcript", 200 to """{"id":"t1","text":"Hi"}""")
+
+        stt().run(words = listOf("Soniox", "Jamius Siam"))
+
+        val create = awaitRequest("POST", "/v1/transcriptions")
+        assertEquals(
+            Json.parseToJsonElement(
+                """{"model":"stt-async-v6","file_id":"f1","context":{"terms":["Soniox","Jamius Siam"]}}"""
+            ),
+            Json.parseToJsonElement(create.body!!.utf8())
+        )
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)
@@ -260,6 +278,7 @@ class SonioxFileTranscriptionTest {
         assertFalse(stt.liveText("stt-async-v6"))
         assertTrue(stt.allowsSpeedUp)
         assertEquals(16_000, stt.sampleRate("stt-async-v6"))
+        assertTrue(stt.takesCustomWords("stt-async-v6"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

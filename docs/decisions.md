@@ -79,3 +79,31 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
 - **Recreating the activity mid-operation** (rotation, dark-mode switch) shows no result: a backup is cancelled and
   its file deleted, a restore still completes. The password must be entered again and a restore file picked
   again (neither is saved).
+
+## Custom Words
+- **Custom words are sent to cloud STT and cleanup providers** (often personal names). They are never logged; only
+  a count of dropped Deepgram keyterms is. Deepgram gets `redact_usage=true` with them, so its usage records
+  show `[REDACTED]`. The master toggle is off by default.
+- **The fuzzy correction has false positives** ("nation" -> "Notion", "James" -> "Jamius", "cloud" -> "Claude",
+  "sonic" -> "Soniox", "market" -> "Marketo" when those are in the list). It is stricter than Handy's (phonetic
+  factor 0.5, fuzzy only for keys of 5+ characters, a fuzzy span yields to a closer match inside it, plurals such
+  as "Teslas" are kept), so it is off by default: "Correct Similar-Sounding Words" (under the master toggle) turns
+  it on.
+- **Custom words that are also common words are capitalised everywhere** when that switch is on ("go" -> "Go",
+  "rust" -> "Rust", "notion" -> "Notion"). Only all-caps acronyms under 5 letters ("US", "IT", "AI") leave an
+  all-lowercase word as is ("let us know"); "Us" still becomes "US".
+- **That switch off means no in-app change at all**, not even the exact casing fix. STT biasing and the cleanup
+  glossary still apply.
+- **Live (partial) text isn't corrected**, only the final transcript.
+- **On device and Vercel AI Gateway STT get no biasing** (sherpa-onnx hotwords are a follow-up; Gateway forwarding
+  is unverified), only the correction and the cleanup glossary.
+- **Deepgram nova-2 isn't biased** (its legacy `keywords` has another syntax); Nova-3 only (`keyterm`).
+- **Deepgram terms over the token budget are dropped per request** (estimated, 450 of Deepgram's 500 tokens; the
+  rest of the list in order).
+- **OpenAI: `gpt-realtime-whisper` and `gpt-4o-transcribe-diarize` get no words** (no prompt for them per the docs);
+  `whisper-1` reads only the last 224 tokens of its prompt.
+- **Only 1-3 word, ASCII-only matches are corrected**; accented, non-Latin and non-ASCII custom words are still sent
+  to providers but never corrected in-app. A hyphenated custom word transcribed as one token ("gpt-5")
+  is not corrected either (the hyphen ends the run; "gpt 5" is).
+- **An over-cap list in a restored backup is cut silently** (entries over 60 characters dropped, then the first
+  100 kept); adding over the caps in the UI shows an error and adds nothing.

@@ -26,6 +26,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -143,6 +144,20 @@ class OpenAiRealtimeSpeechToTextTest {
         val audio = received.filter { type(it) == "input_audio_buffer.append" }.map(::appendedAudio)
         assertEquals(listOf(2, MIN_COMMIT_BYTES - 2), audio.map { it.size })
         assertTrue(audio[1].all { it == 0.toByte() })
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
+    fun customWordsGoInTheSessionUpdate() = runBlocking {
+        upgrade(onMessage = { socket, text ->
+            if (type(text) == "input_audio_buffer.commit") {
+                socket.send(COMMITTED)
+                socket.send(completed(""))
+            }
+        })
+
+        stt().transcribe(flowOf(byteArrayOf(1, 2)), "gpt-live-transcribe", "", TIMEOUT_MS, {}, listOf("Iris"))
+
+        assertEquals(sessionUpdate("gpt-live-transcribe", "", listOf("Iris")), received.first())
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)
@@ -367,6 +382,17 @@ class OpenAiRealtimeSpeechToTextTest {
         val text = stt().transcribe(flowOf(byteArrayOf(1, 2)), "gpt-live-transcribe", "", TIMEOUT_MS, {})
 
         assertEquals("Still fine.", text)
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
+    fun takesCustomWordsWhereTheSessionSendsThem() {
+        val stt = stt()
+        for (model in listOf("gpt-transcribe", "gpt-live-transcribe", "whisper-1", "gpt-4o-transcribe")) {
+            assertTrue(model, stt.takesCustomWords(model))
+        }
+        assertTrue(stt.takesCustomWords("gpt-4o-mini-transcribe-2025-12-15"))
+        assertFalse(stt.takesCustomWords("gpt-realtime-whisper"))
+        assertFalse(stt.takesCustomWords("gpt-4o-transcribe-diarize"))
     }
 
     private fun appendedAudio(message: String): ByteArray =

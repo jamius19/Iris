@@ -5,10 +5,12 @@
 
 package dev.jamius.iris.ui.settings
 
+import androidx.datastore.preferences.core.emptyPreferences
 import dev.jamius.iris.data.settings.CustomCleanupProvider
 import dev.jamius.iris.data.settings.Settings
 import dev.jamius.iris.data.settings.cleanupProviderLabel
 import dev.jamius.iris.data.settings.sttProviderLabel
+import dev.jamius.iris.data.settings.toSettings
 import dev.jamius.iris.stt.ondevice.SpeedVerdict
 import dev.jamius.iris.stt.ondevice.onDeviceModel
 import dev.jamius.iris.stt.ondevice.speedVerdict
@@ -262,5 +264,64 @@ class SettingsTextTest {
         assertEquals("https://dontkillmyapp.com/?app=Iris", dontKillMyAppUrl("HONOR"))
         assertEquals("https://dontkillmyapp.com/?app=Iris", dontKillMyAppUrl("unknown"))
         assertEquals("https://dontkillmyapp.com/?app=Iris", dontKillMyAppUrl(""))
+    }
+
+    @Test
+    fun customWordErrors() {
+        val ninetyNine = (1..99).map { "w$it" }
+        assertNull(customWordError(ninetyNine, "w100"))
+        assertNull(customWordError(ninetyNine, "x".repeat(60)))
+        assertNull(customWordError(ninetyNine, "  ${"x".repeat(60)}  "))
+        assertEquals("Keep it to 60 characters or fewer.", customWordError(ninetyNine, "x".repeat(61)))
+        assertEquals(
+            "The list is full (100 words or phrases).",
+            customWordError(ninetyNine + "w100", "w101")
+        )
+        // Blank input adds nothing, no error.
+        assertNull(customWordError(ninetyNine + "w100", "  "))
+        assertNull(customWordError(emptyList(), ""))
+    }
+
+    @Test
+    fun customWordsSttNoteOnlyWhileInUseAndSent() {
+        val on = emptyPreferences().toSettings(emptySet())
+            .copy(customWordsEnabled = true, customWords = listOf("Deepgram"))
+
+        assertEquals("Custom words feature is on, so additional charges might apply.", customWordsSttNote(on, true))
+        assertNull(customWordsSttNote(on, false))
+        assertNull(customWordsSttNote(on.copy(customWordsEnabled = false), true))
+        assertNull(customWordsSttNote(on.copy(customWords = emptyList()), true))
+    }
+
+    @Test
+    fun customWordsUnsentNoteNamesWhatStillApplies() {
+        assertNull(customWordsUnsentNote(enabled = true, sent = true, correctionEnabled = true, cleanupEnabled = true))
+        assertNull(
+            customWordsUnsentNote(enabled = true, sent = true, correctionEnabled = false, cleanupEnabled = false)
+        )
+        assertEquals(
+            "Not sent to this model. Only the correction and LLM cleanup apply.",
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = true, cleanupEnabled = true)
+        )
+        assertEquals(
+            "Not sent to this model. Only the correction applies.",
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = true, cleanupEnabled = false)
+        )
+        assertEquals(
+            "Not sent to this model. Only the LLM cleanup applies.",
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = false, cleanupEnabled = true)
+        )
+        assertEquals(
+            "Not sent to this model, so custom words have no effect.",
+            customWordsUnsentNote(enabled = true, sent = false, correctionEnabled = false, cleanupEnabled = false)
+        )
+        assertEquals(
+            "Feature is disabled.",
+            customWordsUnsentNote(enabled = false, sent = false, correctionEnabled = false, cleanupEnabled = false)
+        )
+        assertEquals(
+            "Feature is disabled.",
+            customWordsUnsentNote(enabled = false, sent = true, correctionEnabled = true, cleanupEnabled = true)
+        )
     }
 }

@@ -41,6 +41,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.jamius.iris.cleanup.GatewayModel
 import dev.jamius.iris.data.settings.CustomCleanupProvider
+import dev.jamius.iris.data.settings.Settings
 import dev.jamius.iris.data.settings.SettingsRepository
 import dev.jamius.iris.dictation.Statistics
 import dev.jamius.iris.stt.ondevice.OnDeviceModelStore
@@ -50,12 +51,20 @@ import dev.jamius.iris.ui.theme.IrisTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-enum class Page { Home, Transcription, PostProcessing, Appearance, Statistics, Backup }
+enum class Page { Home, Transcription, PostProcessing, CustomWords, Appearance, Statistics, Backup }
+
+/** The page back returns to: Custom Words is under Post Processing, the others under Home (which has none). */
+val Page.parent: Page?
+    get() = when (this) {
+        Page.Home -> null
+        Page.CustomWords -> Page.PostProcessing
+        else -> Page.Home
+    }
 
 /**
- * The settings UI: Home and its five sub-pages (own navigation state, slide transitions, predictive back),
- * the model catalogues and their load triggers. Leaving a page, the app (ON_STOP) or tapping empty space clears focus,
- * which commits a focused text field.
+ * The settings UI: Home, its five sub-pages and Custom Words under Post Processing (own navigation state, slide
+ * transitions, predictive back; back goes to the page's [parent]), the model catalogues and their load triggers.
+ * Leaving a page, the app (ON_STOP) or tapping empty space clears focus, which commits a focused text field.
  */
 @Composable
 fun SettingsApp(
@@ -69,6 +78,7 @@ fun SettingsApp(
     onDeviceModels: OnDeviceModelStore,
     statistics: Statistics,
     favicons: Favicons,
+    sttTakesCustomWords: (Settings) -> Boolean,
 ) {
     val settings = repository.settings.collectAsState(initial = null).value
     // App-level (sessions use it too); it reloads itself when the Soniox key or region changes.
@@ -132,8 +142,9 @@ fun SettingsApp(
     PredictiveBackHandler(enabled = page != Page.Home) { events ->
         focusManager.clearFocus()
         try {
-            events.collect { pageState.seekTo(it.progress, targetState = Page.Home) }
-            page = Page.Home
+            val parent = page.parent ?: Page.Home
+            events.collect { pageState.seekTo(it.progress, targetState = parent) }
+            page = parent
         } catch (e: CancellationException) {
             // Gesture cancelled: settle back on the sub-page.
             scope.launch { pageState.animateTo(page) }
@@ -150,17 +161,18 @@ fun SettingsApp(
         }
     }
     if (settings == null) return
-    val back = { page = Page.Home }
+    val back = { page = page.parent ?: Page.Home }
+    val customWordsSent = sttTakesCustomWords(settings)
     Box(Modifier.fillMaxSize()) {
         transition.AnimatedContent(
             transitionSpec = {
                 // One spec for both pages, no fades: nothing disappears before the slide ends.
                 val slide = tween<IntOffset>(PAGE_MS, easing = FastOutSlowInEasing)
-                if (targetState != Page.Home) {
-                    // The sub-page slides in over Home, which shifts a quarter left underneath.
+                if (targetState != initialState.parent) {
+                    // The sub-page slides in over its parent, which shifts a quarter left underneath.
                     slideInHorizontally(slide) { it } togetherWith slideOutHorizontally(slide) { -it / 4 }
                 } else {
-                    // The sub-page slides off on top (Home's zIndex -1); Home comes back underneath.
+                    // The sub-page slides off on top (its parent's zIndex -1); the parent comes back underneath.
                     (slideInHorizontally(slide) { -it / 4 } togetherWith slideOutHorizontally(slide) { it })
                         .apply { targetContentZIndex = -1f }
                 }.using(SizeTransform(clip = false))
@@ -178,6 +190,7 @@ fun SettingsApp(
                         sonioxCatalog,
                         onDeviceModels,
                         onDeviceState,
+                        customWordsSent,
                         onBack = back
                     )
                     Page.PostProcessing -> PostProcessingPage(
@@ -186,8 +199,14 @@ fun SettingsApp(
                         saver,
                         catalogs,
                         favicons,
+                        customWordsSent,
+                        onOpenCustomWords = {
+                            focusManager.clearFocus()
+                            page = Page.CustomWords
+                        },
                         onBack = back
                     )
+                    Page.CustomWords -> CustomWordsPage(settings, repository, saver, onBack = back)
                     Page.Appearance -> AppearancePage(settings, repository, saver, onBack = back)
                     Page.Statistics -> StatisticsPage(stats, statistics::reset, onBack = back)
                     Page.Backup -> BackupPage(repository, onRestored = { catalogGeneration++ }, onBack = back)

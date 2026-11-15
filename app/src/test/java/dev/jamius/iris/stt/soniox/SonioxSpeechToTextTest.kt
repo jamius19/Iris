@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
@@ -135,6 +136,16 @@ class SonioxSpeechToTextTest {
 
         assertEquals(start(hints = listOf("en", "bn"), strict = true), Json.parseToJsonElement(frames[0]))
         assertEquals(listOf("stt-rt-v6"), lookups)
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
+    fun customWordsGoInTheStartMessage() = runBlocking {
+        upgrade(onEnd = { it.send(FINISHED) })
+
+        stt().transcribe(flowOf(byteArrayOf(1)), "stt-rt-v6", "", TIMEOUT_MS, {}, listOf("Soniox"))
+
+        val context = Json.parseToJsonElement(frames[0]).jsonObject["context"]
+        assertEquals(Json.parseToJsonElement("""{"terms":["Soniox"]}"""), context)
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)
@@ -322,6 +333,7 @@ class SonioxSpeechToTextTest {
         assertTrue(stt.liveText("stt-rt-v6"))
         assertFalse(stt.allowsSpeedUp)
         assertEquals(16_000, stt.sampleRate("stt-rt-v6"))
+        assertTrue(stt.takesCustomWords("stt-rt-v6"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

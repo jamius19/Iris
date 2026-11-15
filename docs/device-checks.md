@@ -11,6 +11,8 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - A field that rejects `ACTION_SET_TEXT` gets the text via clipboard + paste.
 - Empty WhatsApp / Gmail box: no placeholder ("Message") in the inserted text.
 - Keyboard-only field (ChatGPT's chat box right after a fresh launch): bubble shows, text is inserted.
+- Google Keep note that already has text: the dictation lands at the cursor, Enter and typing work after it, and
+  the text is still there after leaving and reopening the note.
 - Changing field during cleanup: text is copied with "field changed".
 - Sideloaded APK: the accessibility toggle needs App info > ⋮ > "Allow restricted settings".
 
@@ -113,3 +115,34 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - Rotation while Creating… / Restoring…: no message; a backup leaves no file, a restore still completes.
 - TalkBack: both "Password" fields, "Show Password" / "Hide Password", the selected file name, buttons and outcome
   text are read.
+
+## Custom Words (real voice)
+- A name the provider normally misspells comes out right on OpenAI (`gpt-live-transcribe` and `whisper-1`),
+  Deepgram `nova-3` streaming and upload, Soniox `stt-rt-v6` and async.
+- Deepgram with 100 long phrases doesn't fail (token budget; the log shows the dropped count); nova-2 still works.
+- With Correct Similar-Sounding Words on, an on-device dictation gets the fuzzy fix ("sonics" -> "Soniox" with
+  Soniox in the list); with it off (the default) the text is left as transcribed.
+- AI Cleanup keeps a custom spelling.
+- Master off sends nothing (provider logs / usage show no keyterms, keywords, prompt or context).
+- Settings: Post Processing -> Custom Words, back (button and predictive gesture) returns to Post Processing, then
+  Home; the card title and page header read "Custom Words (Beta)". Correct Similar-Sounding Words sits in the
+  master toggle's card under a separator, off on a fresh install, dimmed but still switchable with the master off.
+- Add Word: plus and keyboard Done add the trimmed word to the end of the list and clear the field (keyboard stays
+  open after Done); a blank or case-insensitive duplicate adds nothing; each row's trash deletes it; the list
+  survives leaving the page and an app restart.
+- Add Word errors: over 60 characters, or a 101st word, shows the error and adds nothing; typing clears it.
+- Supported model (OpenAI `gpt-live-transcribe`, Deepgram `nova-3`, Soniox) with the toggle on and words: the
+  Transcription Provider shows "Custom words feature is on, so additional charges might apply."; gone with the
+  toggle off or no words; the Custom Words card has no note.
+- Unsupported model (on device, Vercel AI Gateway, Deepgram `nova-2`, OpenAI `gpt-realtime-whisper`): no
+  Transcription note; the Custom Words card shows "Not sent to this model. Only the correction and LLM cleanup
+  apply." with the correction and AI Cleanup on, "...Only the correction applies." with cleanup off, "...Only the
+  LLM cleanup applies." with the correction off, "Not sent to this model, so custom words have no effect." with
+  both off (failure colour, SemiBold); the card still opens.
+- Custom Words toggle off, any model: the card shows "Feature is disabled." in muted text and no other note.
+- Post Processing with the prompt field focused and edited, tap the Custom Words card: the edit is saved and the
+  keyboard closes.
+- `whisper-1` with Skip silence off and one short word dictated: the "Glossary:" prompt is not returned as the
+  transcript.
+- A 5 min dictation with 100 custom words: no visible stall at stop (the correction runs on the main thread).
+- R8 release build on an arm64 phone launches and corrects (stdlib calls in `CustomWords.kt`, `Kt__*` rule).

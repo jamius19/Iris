@@ -16,6 +16,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 
 // Request building and message parsing for Soniox's speech-to-text APIs, free of I/O for unit tests. Checked
 // 2026-11-13:
@@ -56,32 +57,46 @@ internal fun sonioxLanguageHints(language: String): List<String> =
 /**
  * The WebSocket's first (text) frame: raw PCM16 mono at 16 kHz. [strict] (`language_hints_strict`) only with hints,
  * and only for a model whose catalogue entry supports it (else the server answers 400). The key goes in the
- * handshake's header, never in `api_key`.
+ * handshake's header, never in `api_key`. [terms] (custom words) go in as `context.terms`, only when there are any.
  */
-internal fun sonioxStartMessage(model: String, hints: List<String>, strict: Boolean): String = buildJsonObject {
+internal fun sonioxStartMessage(
+    model: String,
+    hints: List<String>,
+    strict: Boolean,
+    terms: List<String> = emptyList(),
+): String = buildJsonObject {
     put("model", model)
     put("audio_format", "pcm_s16le")
     put("sample_rate", SONIOX_SAMPLE_RATE)
     put("num_channels", 1)
     putHints(hints, strict)
+    putContext(terms)
 }.toString()
 
-/** `POST /v1/transcriptions` body for the uploaded file [fileId]; hints as in [sonioxStartMessage]. */
+/** `POST /v1/transcriptions` body for the uploaded file [fileId]; hints and terms as in [sonioxStartMessage]. */
 internal fun sonioxCreateTranscriptionBody(
     model: String,
     fileId: String,
     hints: List<String>,
     strict: Boolean,
+    terms: List<String> = emptyList(),
 ): String = buildJsonObject {
     put("model", model)
     put("file_id", fileId)
     putHints(hints, strict)
+    putContext(terms)
 }.toString()
 
 private fun JsonObjectBuilder.putHints(hints: List<String>, strict: Boolean) {
     if (hints.isEmpty()) return
     putJsonArray("language_hints") { hints.forEach { add(JsonPrimitive(it)) } }
     if (strict) put("language_hints_strict", true)
+}
+
+/** `context: {terms: [...]}` (https://soniox.com/docs/stt/concepts/context, checked 2026-11-15). */
+private fun JsonObjectBuilder.putContext(terms: List<String>) {
+    if (terms.isEmpty()) return
+    putJsonObject("context") { putJsonArray("terms") { terms.forEach { add(JsonPrimitive(it)) } } }
 }
 
 /** A transcript piece; tokens carry their own spacing. [isFinal]: never repeated or changed. */

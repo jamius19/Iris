@@ -290,6 +290,28 @@ class BackupTest {
     }
 
     @Test
+    fun customWordsRoundTrip() {
+        val prefs = mutablePreferencesOf(
+            booleanPreferencesKey("custom_words_enabled") to true,
+            stringPreferencesKey("custom_words") to encodeCustomWords(listOf("Deepgram", "Jamius Siam")),
+            booleanPreferencesKey("correct_similar_words") to true,
+        )
+
+        val restored = roundTrip(BackupContents(prefs, emptyMap()))
+
+        assertEquals(prefs.asMap(), restored.prefs.asMap())
+        val settings = restored.prefs.toSettings(emptySet())
+        assertTrue(settings.customWordsEnabled)
+        assertEquals(listOf("Deepgram", "Jamius Siam"), settings.customWords)
+        assertTrue(settings.correctSimilarWords)
+    }
+
+    @Test
+    fun malformedCustomWordsAreRejected() {
+        expectFailure(DAMAGED) { decodeBackup(payload(""""custom_words":{"type":"string","value":"[1,"}""")) }
+    }
+
+    @Test
     fun malformedPromptsAreRejected() {
         expectFailure(DAMAGED) { decodeBackup(payload(""""cleanup_prompts":{"type":"string","value":"[{"}""")) }
     }

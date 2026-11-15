@@ -359,4 +359,60 @@ class SettingsMappingTest {
 
         assertEquals(prompts[0], prefs.toSettings(emptySet()).activePrompt)
     }
+
+    @Test
+    fun customWordsDefaults() {
+        val settings = emptyPreferences().toSettings(emptySet())
+
+        assertFalse(settings.customWordsEnabled)
+        assertEquals(emptyList<String>(), settings.customWords)
+        assertFalse(settings.correctSimilarWords)
+    }
+
+    @Test
+    fun storedCustomWordsAreMapped() {
+        val prefs = mutablePreferencesOf(
+            Keys.CUSTOM_WORDS_ENABLED to true,
+            Keys.CUSTOM_WORDS to encodeCustomWords(listOf("Deepgram", "Jamius Siam")),
+            Keys.CORRECT_SIMILAR_WORDS to true,
+        )
+        val settings = prefs.toSettings(emptySet())
+
+        assertTrue(settings.customWordsEnabled)
+        assertEquals(listOf("Deepgram", "Jamius Siam"), settings.customWords)
+        assertTrue(settings.correctSimilarWords)
+    }
+
+    @Test
+    fun normalizeCustomWordsCleansTheList() {
+        val words = listOf(" Deepgram ", "", "   ", "deepgram", "<Soniox>", "a\r\nb", "Jamius \t  Siam", "x".repeat(61))
+
+        assertEquals(listOf("Deepgram", "Soniox", "ab", "Jamius Siam"), normalizeCustomWords(words))
+        assertEquals(listOf("x".repeat(60)), normalizeCustomWords(listOf("x".repeat(60))))
+        assertEquals((1..100).map { "w$it" }, normalizeCustomWords((1..101).map { "w$it" }))
+    }
+
+    @Test
+    fun storedCustomWordsAreNormalisedOnRead() {
+        val stored = listOf(" <a> ", "A", "y".repeat(61)) + (1..120).map { "w$it" }
+        val prefs = mutablePreferencesOf(Keys.CUSTOM_WORDS to encodeCustomWords(stored))
+        val words = prefs.toSettings(emptySet()).customWords
+
+        assertEquals(100, words.size)
+        assertEquals(listOf("a", "w1"), words.take(2))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun malformedCustomWordsThrow() {
+        mutablePreferencesOf(Keys.CUSTOM_WORDS to "not json").toSettings(emptySet())
+    }
+
+    @Test
+    fun activeCustomWordsNeedTheToggle() {
+        val words = listOf("Deepgram")
+        val settings = emptyPreferences().toSettings(emptySet()).copy(customWords = words)
+
+        assertEquals(emptyList<String>(), settings.activeCustomWords)
+        assertEquals(words, settings.copy(customWordsEnabled = true).activeCustomWords)
+    }
 }

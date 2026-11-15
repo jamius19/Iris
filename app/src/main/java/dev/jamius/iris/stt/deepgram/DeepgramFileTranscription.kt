@@ -43,22 +43,27 @@ class DeepgramFileTranscription(
 
     override fun sampleRate(model: String): Int = DEEPGRAM_SAMPLE_RATE
 
+    override fun takesCustomWords(model: String): Boolean = takesKeyterms(model)
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String>,
     ): String {
         val key = apiKey()?.takeIf { it.isNotBlank() }
             ?: throw SttException("Add your Deepgram API key in Iris settings")
+        val dropped = droppedKeyterms(model, customWords)
+        if (dropped > 0) Log.d(TAG, "Keyterms: dropped $dropped over the token budget")
         val chunks = ArrayList<ByteArray>()
         audio.collect { chunks += it }
         val stoppedAt = System.nanoTime()
         val wav = wavBytes(chunks, DEEPGRAM_SAMPLE_RATE)
         val body = SentBody(wav.toRequestBody("audio/wav".toMediaType()))
         val request = Request.Builder()
-            .url(listenUrl(url, model, language, streaming = false))
+            .url(listenUrl(url, model, language, streaming = false, keyterms = customWords))
             .header("Authorization", "Token $key")
             .post(body)
             .build()

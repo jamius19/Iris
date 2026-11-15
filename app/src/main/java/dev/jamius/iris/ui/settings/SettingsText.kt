@@ -193,6 +193,51 @@ fun newPromptName(existing: List<String>): String {
 /** Why [text] can't be saved as provider options (blank is fine: it clears them), or null. */
 fun providerOptionsError(text: String): String? = runCatching { parseProviderOptions(text) }.exceptionOrNull()?.message
 
+/**
+ * Why [input] can't be added to the Custom Words [words], or null: over the length cap, or the list is full. A blank
+ * [input] is no error (nothing is added; nor is a case-insensitive duplicate, dropped on save).
+ */
+fun customWordError(words: List<String>, input: String): String? = when {
+    input.isBlank() -> null
+    input.trim().length > Settings.MAX_CUSTOM_WORD_LENGTH ->
+        "Keep it to ${Settings.MAX_CUSTOM_WORD_LENGTH} characters or fewer."
+    words.size >= Settings.MAX_CUSTOM_WORDS -> "The list is full (${Settings.MAX_CUSTOM_WORDS} words or phrases)."
+    else -> null
+}
+
+/** The Add Word field's helper: the caps. */
+const val CUSTOM_WORDS_HELPER =
+    "Up to ${Settings.MAX_CUSTOM_WORDS} words or phrases, ${Settings.MAX_CUSTOM_WORD_LENGTH} characters each."
+
+/**
+ * The Transcription Provider note while Custom Words are in use (on, with words) and [sent] (the selected provider and
+ * model get them), else null.
+ */
+fun customWordsSttNote(settings: Settings, sent: Boolean): String? =
+    if (sent && settings.activeCustomWords.isNotEmpty()) {
+        "Custom words feature is on, so additional charges might apply."
+    } else {
+        null
+    }
+
+/**
+ * The Custom Words card's note: that the feature is off, or, when the selected model doesn't get the words
+ * ([sent] false), what still applies; else null.
+ */
+fun customWordsUnsentNote(
+    enabled: Boolean,
+    sent: Boolean,
+    correctionEnabled: Boolean,
+    cleanupEnabled: Boolean
+): String? = when {
+    !enabled -> "Feature is disabled."
+    sent -> null
+    correctionEnabled && cleanupEnabled -> "Not sent to this model. Only the correction and LLM cleanup apply."
+    correctionEnabled -> "Not sent to this model. Only the correction applies."
+    cleanupEnabled -> "Not sent to this model. Only the LLM cleanup applies."
+    else -> "Not sent to this model, so custom words have no effect."
+}
+
 private const val NEW_PROMPT = "New prompt"
 
 /** Vendor pages that exist on dontkillmyapp.com (an unknown slug is a 404; "honor" is one). */

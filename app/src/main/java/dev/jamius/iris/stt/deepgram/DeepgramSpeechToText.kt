@@ -54,19 +54,24 @@ class DeepgramSpeechToText(
 
     override fun sampleRate(model: String): Int = DEEPGRAM_SAMPLE_RATE
 
+    override fun takesCustomWords(model: String): Boolean = takesKeyterms(model)
+
     override suspend fun transcribe(
         audio: Flow<ByteArray>,
         model: String,
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String>,
     ): String {
         val key = apiKey()?.takeIf { it.isNotBlank() }
             ?: throw SttException("Add your Deepgram API key in Iris settings")
+        val dropped = droppedKeyterms(model, customWords)
+        if (dropped > 0) Log.d(TAG, "Keyterms: dropped $dropped over the token budget")
         warmedUpAt = null // The handshake takes the warmed connection (an upgraded one never returns to the pool).
         val events = Channel<DeepgramEvent>(Channel.UNLIMITED)
         val request = Request.Builder()
-            .url(listenUrl(url, model, language, streaming = true))
+            .url(listenUrl(url, model, language, streaming = true, keyterms = customWords))
             .header("Authorization", "Token $key")
             .build()
         val listener = Listener(events, startedAt = System.nanoTime())

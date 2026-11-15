@@ -58,7 +58,8 @@ class DeepgramFileTranscriptionTest {
         audio: Flow<ByteArray> = flowOf(CHUNK_A, CHUNK_B),
         language: String = "",
         timeoutMs: Long = TIMEOUT_MS,
-    ) = transcribe(audio, "nova-3", language, timeoutMs) { error("No live text") }
+        words: List<String> = emptyList(),
+    ) = transcribe(audio, "nova-3", language, timeoutMs, { error("No live text") }, words)
 
     private fun failure(block: suspend () -> Unit): SttException =
         assertThrows(SttException::class.java) { runBlocking { block() } }
@@ -95,6 +96,15 @@ class DeepgramFileTranscriptionTest {
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)
+    fun customWordsAreSentAsKeyterms() = runBlocking {
+        respond(200, response("Hi"))
+
+        stt().run(words = listOf("Deepgram", "Jamius Siam"))
+
+        assertEquals(listOf("Deepgram", "Jamius Siam"), server.takeRequest().url.queryParameterValues("keyterm"))
+    }
+
+    @Test(timeout = TEST_TIMEOUT_MS)
     fun blankTranscriptIsReturnedBlank() = runBlocking {
         respond(200, response(""))
 
@@ -108,6 +118,9 @@ class DeepgramFileTranscriptionTest {
         assertFalse(stt.streams)
         assertFalse(stt.liveText("nova-3"))
         assertEquals(16_000, stt.sampleRate("nova-3"))
+        assertTrue(stt.takesCustomWords("nova-3"))
+        assertTrue(stt.takesCustomWords("nova-3-medical"))
+        assertFalse(stt.takesCustomWords("nova-2"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

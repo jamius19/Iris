@@ -38,6 +38,9 @@ interface SpeechToTextProvider {
      */
     val wantsSegmentEnds: Boolean get() = false
 
+    /** [transcribe] sends [model] the custom words; false = it ignores them (the settings' Custom Words notes). */
+    fun takesCustomWords(model: String): Boolean = false
+
     /**
      * Streams [audio] (PCM16 mono chunks at [sampleRate] of [model]) to the service and reports the whole live
      * transcript through [onPartial] whenever it changes. Once [audio] completes, finalizes and returns the final
@@ -49,6 +52,8 @@ interface SpeechToTextProvider {
      *
      * @param language ISO-639-1 code, or blank to auto-detect (Soniox: a comma-separated list).
      * @param timeoutMs how long to wait for the final transcript once all audio is sent.
+     * @param customWords terms to bias recognition toward (normalised Custom Words); providers without a supported
+     *   option ignore it.
      */
     suspend fun transcribe(
         audio: Flow<ByteArray>,
@@ -56,6 +61,7 @@ interface SpeechToTextProvider {
         language: String,
         timeoutMs: Long,
         onPartial: (String) -> Unit,
+        customWords: List<String> = emptyList(),
     ): String
 
     /**

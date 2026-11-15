@@ -19,6 +19,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 // https://developers.deepgram.com/reference/speech-to-text/listen-streaming
 // https://developers.deepgram.com/reference/speech-to-text/listen-pre-recorded
 // https://developers.deepgram.com/docs/close-stream, https://developers.deepgram.com/docs/errors
+// Keyterms checked 2026-11-15: https://developers.deepgram.com/docs/keyterm, /docs/redact-usage
 
 /**
  * Streaming (OkHttp upgrades `https` to a WebSocket: `wss` on the wire) and pre-recorded upload (`POST`) share it.
@@ -35,12 +36,43 @@ internal const val DEEPGRAM_SAMPLE_RATE = 16_000
 /** Flushes the stream: the server sends the remaining Results, then Metadata, then closes. */
 internal const val CLOSE_STREAM = """{"type":"CloseStream"}"""
 
+/** Keyterm prompting (`keyterm`) is Nova-3 only (and Flux, which we don't use); nova-2 is not biased. */
+internal fun takesKeyterms(model: String): Boolean = model.trim().startsWith("nova-3")
+
+/** Our budget under Deepgram's 500 tokens across all keyterms (over it the request fails); the count is estimated. */
+private const val KEYTERM_TOKEN_BUDGET = 450
+
+/**
+ * The leading [words] whose estimated tokens fit [KEYTERM_TOKEN_BUDGET]; the rest are dropped. Deepgram doesn't say
+ * how it counts, so a term is estimated at one token per 2 characters (English averages ~4; names and brands split
+ * into more).
+ */
+internal fun deepgramKeyterms(words: List<String>): List<String> {
+    var tokens = 0
+    return words.takeWhile {
+        tokens += (it.length + 1) / 2
+        tokens <= KEYTERM_TOKEN_BUDGET
+    }
+}
+
+/** How many of [words] [listenUrl] leaves out over the token budget for [model] (0 if it sends none at all). */
+internal fun droppedKeyterms(model: String, words: List<String>): Int =
+    if (takesKeyterms(model)) words.size - deepgramKeyterms(words).size else 0
+
 /**
  * [baseUrl] with the query for [model] and [language] (blank = `multi`: Nova-3 code-switching auto-detect). A
  * [streaming] session also states the raw audio format and asks for interim results; `multi` gets the 100 ms
  * endpointing the docs recommend for code-switching. An upload is a WAV file, whose header states the format.
+ * [keyterms] (custom words) go in as one `keyterm` each, Nova-3 only, within the token budget ([deepgramKeyterms]),
+ * with `redact_usage` so Deepgram's usage records show `[REDACTED]` instead of them (transcription is unchanged).
  */
-internal fun listenUrl(baseUrl: String, model: String, language: String, streaming: Boolean): HttpUrl {
+internal fun listenUrl(
+    baseUrl: String,
+    model: String,
+    language: String,
+    streaming: Boolean,
+    keyterms: List<String> = emptyList(),
+): HttpUrl {
     val multi = language.isBlank()
     return baseUrl.toHttpUrl().newBuilder()
         .addQueryParameter("model", model)
@@ -48,6 +80,9 @@ internal fun listenUrl(baseUrl: String, model: String, language: String, streami
         .addQueryParameter("smart_format", "true")
         .addQueryParameter("punctuate", "true")
         .apply {
+            val sent = if (takesKeyterms(model)) deepgramKeyterms(keyterms) else emptyList()
+            sent.forEach { addQueryParameter("keyterm", it) }
+            if (sent.isNotEmpty()) addQueryParameter("redact_usage", "true")
             if (streaming) {
                 addQueryParameter("encoding", "linear16")
                 addQueryParameter("sample_rate", DEEPGRAM_SAMPLE_RATE.toString())

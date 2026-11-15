@@ -25,6 +25,7 @@ import dev.jamius.iris.IrisApp
 import dev.jamius.iris.cleanup.CleanupException
 import dev.jamius.iris.cleanup.parseProviderOptions
 import dev.jamius.iris.cleanup.timedCleanup
+import dev.jamius.iris.cleanup.withGlossary
 import dev.jamius.iris.data.settings.Settings
 import dev.jamius.iris.dictation.DictationController
 import dev.jamius.iris.dictation.DictationState
@@ -288,7 +289,7 @@ class IrisAccessibilityService : AccessibilityService() {
                     ) {
                         container.cleanup(settings).cleanup(
                             transcript,
-                            prompt.systemPrompt,
+                            withGlossary(prompt.systemPrompt, settings.activeCustomWords),
                             settings.activeCleanupModel,
                             settings.activeCleanupReasoningEffort,
                             parseProviderOptions(settings.activeCleanupProviderOptions)

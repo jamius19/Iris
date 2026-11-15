@@ -15,6 +15,11 @@ protocol code, and update the date when you do.
   `gpt-4o-transcribe`, `gpt-4o-transcribe-diarize`, `gpt-realtime-whisper`. Only `gpt-live-transcribe` and
   `gpt-realtime-whisper` send text before the commit.
 - `gpt-4o-*-transcribe` are deprecated, shutdown 2027-02-26.
+- Custom Words, checked 2026-11-15 against the client events reference and the realtime transcription guide:
+  `keywords` (array, in `audio.input.transcription`) for `gpt-transcribe` and `gpt-live-transcribe`; `prompt`
+  (`"Glossary: A, B"`) for `whisper-1` (a list of keywords) and the `gpt-4o(-mini)-transcribe` models, not diarize;
+  "Prompt is not supported with gpt-realtime-whisper", so it gets nothing. No count or length limit is documented;
+  `<`, `>`, CR or LF in a keyword, or a prompt over the model's limit, rejects the session update. No separate price.
 - Warm-up, measured 2026-11-11 with curl `--http1.1`: keyless `HEAD /v1/models` 401, ~250 ms after TLS (`HEAD /`
   ~5 ms but a 421, `HEAD /v1/realtime` 405 ~750 ms). api.openai.com closed an idle HTTP/1.1 connection after 400 s;
   OkHttp's pool evicts idle ones after 5 min, hence the 3 min throttle.
@@ -23,6 +28,9 @@ protocol code, and update the date when you do.
 - Verified 2026-11-12 against https://developers.openai.com/api/docs/guides/speech-to-text and
   https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create.
 - Files are limited to 25 MB (we split at 20 MB of PCM, ~10 min).
+- Custom Words, checked 2026-11-15 (same pages): one `keywords[]` part per word ("Supported by `gpt-transcribe`"),
+  else `prompt` for `whisper-1` (224-token limit, reads the end) and `gpt-4o(-mini)-transcribe`; diarize rejects a
+  prompt. Same character rule as Realtime (the whole request is rejected). Every split part gets the same words.
 
 ### OpenAI model list (`stt.openai.OpenAiModels.kt`)
 - Verified 2026-11-12 against https://developers.openai.com/api/reference/resources/models/methods/list. The
@@ -39,6 +47,7 @@ protocol code, and update the date when you do.
   google/gemini-3.5-transcribe-live, microsoft/mai-transcribe-2-streaming, openai/gpt-live-transcribe,
   openai/gpt-realtime-whisper, openai/gpt-transcribe, spacexai/grok-stt.
 - The Gateway's HTTP/1.1 idle timeout is unmeasured. Emulator warm-up log: `Warm-up: http/1.1 200`.
+- Custom Words: no biasing (whether the Gateway forwards a provider's option is unverified), streaming and upload.
 
 ### Vercel AI Gateway upload (`stt.vercel.VercelGatewayFileTranscription`)
 - Verified 2026-11-12 against https://vercel.com/docs/ai-gateway/modalities/speech-to-text (updated 2026-09-08)
@@ -59,6 +68,14 @@ protocol code, and update the date when you do.
   unmeasured.
 - Not via the Gateway: its catalog (2026-11-13) has no `deepgram/*` model. The keyless `GET /v1/models` takes
   6-15 s and 207 KB, so the menu is the static `DEEPGRAM_MODELS`.
+- Custom Words (streaming and upload), checked 2026-11-15 against https://developers.deepgram.com/docs/keyterm and
+  https://deepgram.com/pricing: one `keyterm` query parameter per term (spaces as `%20`), Nova-3 (and Flux) only;
+  nova-2's legacy `keywords` isn't used. Up to 100 terms and 500 tokens across all keyterms per request; over it,
+  "Keyterm limit exceeded" fails the request. How tokens are counted isn't documented: we estimate 1 token per 2
+  characters and send terms in order while the total stays within 450. With keyterms we also send
+  `redact_usage=true` (checked 2026-11-15, https://developers.deepgram.com/docs/redact-usage): Deepgram's usage
+  records store `[REDACTED]` in place of each keyterm; transcription and the response are unchanged. Pricing (pay as
+  you go): Keyterm Prompting +$0.0013/min.
 
 ### Deepgram upload (`stt.deepgram.DeepgramFileTranscription`)
 - Verified 2026-11-13 against https://developers.deepgram.com/reference/speech-to-text/listen-pre-recorded and
@@ -71,6 +88,11 @@ protocol code, and update the date when you do.
   `/authentication/websocket-authentication`, `/stt/rt/connection-keepalive`, `/stt/rt/error-handling` and
   `/api-reference/errors`.
 - Server limit: no audio for 20 s = `408 request_timeout`.
+- Custom Words (real-time and async), checked 2026-11-15 against https://soniox.com/docs/stt/concepts/context, the
+  WebSocket API and `create_transcription`: `"context": {"terms": [...]}` in the start message / create body. The
+  whole context is limited to 8,000 tokens (~10,000 characters; 100 x 60 characters stays under it), over it
+  `invalid_request` ("Context is too long"). Billed as input text tokens: $4.00 (real-time) / $3.50 (async) per 1M
+  (https://soniox.com/pricing).
 - Warm-up, 2026-11-13 with curl `--http1.1`: keyless `HEAD` on the WebSocket URL, 426, ~280 ms warm; idle timeout
   unmeasured.
 
@@ -132,4 +154,8 @@ protocol code, and update the date when you do.
 
 ## Other ported logic
 - Filler words: Handy's `src-tauri/src/audio_toolkit/text.rs`.
+- Custom word correction (`dictation.CustomWords.kt`): Handy's `apply_custom_words` in the same file (checked
+  2026-11-15), stricter: threshold 0.18 (Handy's default), phonetic (Soundex) factor 0.5 instead of 0.3, fuzzy only
+  for keys of 5+ characters, n-grams of 1-3 words joined by spaces or tabs only, ASCII only, the custom word as
+  typed (no case pattern copied), and a fuzzy span yields to a closer match starting inside it.
 - Cleanup timeout default: Handy's `post_process_timeout_secs`.

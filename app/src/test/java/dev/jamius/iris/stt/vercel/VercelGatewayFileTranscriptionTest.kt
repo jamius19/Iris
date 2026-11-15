@@ -64,7 +64,7 @@ class VercelGatewayFileTranscriptionTest {
         model: String = MODEL,
         language: String = "",
         timeoutMs: Long = TIMEOUT_MS,
-    ) = transcribe(audio, model, language, timeoutMs) { error("No live text") }
+    ) = transcribe(audio, model, language, timeoutMs, { error("No live text") })
 
     private fun failure(block: suspend () -> Unit): SttException =
         assertThrows(SttException::class.java) { runBlocking { block() } }
@@ -110,6 +110,7 @@ class VercelGatewayFileTranscriptionTest {
         val stt = stt()
         assertFalse(stt.streams)
         assertEquals(16_000, stt.sampleRate("openai/gpt-4o-transcribe"))
+        assertFalse(stt.takesCustomWords("openai/gpt-4o-transcribe"))
     }
 
     @Test(timeout = TEST_TIMEOUT_MS)

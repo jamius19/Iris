@@ -79,6 +79,33 @@ class SonioxProtocolTest {
     }
 
     @Test
+    fun customWordsGoInTheContextTermsOfBothMessages() {
+        assertEquals(
+            json(
+                """{"model":"stt-rt-v6","audio_format":"pcm_s16le","sample_rate":16000,"num_channels":1,
+                   "context":{"terms":["Soniox","Jamius Siam"]}}"""
+            ),
+            json(sonioxStartMessage("stt-rt-v6", emptyList(), strict = false, listOf("Soniox", "Jamius Siam")))
+        )
+        assertEquals(
+            json("""{"model":"stt-async-v6","file_id":"f1","language_hints":["en"],"context":{"terms":["Soniox"]}}"""),
+            json(sonioxCreateTranscriptionBody("stt-async-v6", "f1", listOf("en"), strict = false, listOf("Soniox")))
+        )
+    }
+
+    @Test
+    fun noCustomWordsNoContext() {
+        assertEquals(
+            json("""{"model":"stt-rt-v6","audio_format":"pcm_s16le","sample_rate":16000,"num_channels":1}"""),
+            json(sonioxStartMessage("stt-rt-v6", emptyList(), strict = false, emptyList()))
+        )
+        assertEquals(
+            json("""{"model":"stt-async-v6","file_id":"f1"}"""),
+            json(sonioxCreateTranscriptionBody("stt-async-v6", "f1", emptyList(), strict = false, emptyList()))
+        )
+    }
+
+    @Test
     fun tokensAreParsedWithoutMarkers() {
         val event = parseSonioxEvent(
             """{"tokens":[{"text":"Hello","start_ms":600,"is_final":true},{"text":" wor","is_final":false},
