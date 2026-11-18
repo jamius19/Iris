@@ -116,6 +116,9 @@ class SettingsMappingTest {
         assertEquals(Settings.DEFAULT_BUBBLE_Y_FRACTION, settings.bubbleYFraction)
         assertEquals(Settings.DEFAULT_PANEL_LINES, settings.panelLines)
         assertEquals(Settings.DEFAULT_PANEL_WIDTH_PERCENT, settings.panelWidthPercent)
+        assertTrue(settings.historyEnabled)
+        assertEquals(Settings.DEFAULT_HISTORY_LIMIT, settings.historyLimit)
+        assertEquals(20, settings.historyLimit)
     }
 
     @Test
@@ -152,6 +155,8 @@ class SettingsMappingTest {
             Keys.PANEL_LINES to 5,
             Keys.PANEL_WIDTH_PERCENT to 70,
             Keys.CUSTOM_CLEANUP_PROVIDERS to encodeCustomProviders(customProviders),
+            Keys.HISTORY_ENABLED to false,
+            Keys.HISTORY_LIMIT to 50,
         )
 
         val settings = prefs.toSettings(
@@ -202,6 +207,8 @@ class SettingsMappingTest {
         assertEquals(0.75f, settings.bubbleYFraction)
         assertEquals(5, settings.panelLines)
         assertEquals(70, settings.panelWidthPercent)
+        assertFalse(settings.historyEnabled)
+        assertEquals(50, settings.historyLimit)
     }
 
     @Test
@@ -209,6 +216,15 @@ class SettingsMappingTest {
         val settings = mutablePreferencesOf(Keys.ON_DEVICE_UNLOAD_MINUTES to 7).toSettings(emptySet())
 
         assertEquals(Settings.DEFAULT_ON_DEVICE_UNLOAD_MINUTES, settings.onDeviceUnloadMinutes)
+    }
+
+    @Test
+    fun historyLimitOutsideTheOptionsMeansTheDefault() {
+        for (limit in listOf(7, 0)) {
+            val settings = mutablePreferencesOf(Keys.HISTORY_LIMIT to limit).toSettings(emptySet())
+
+            assertEquals(Settings.DEFAULT_HISTORY_LIMIT, settings.historyLimit)
+        }
     }
 
     @Test

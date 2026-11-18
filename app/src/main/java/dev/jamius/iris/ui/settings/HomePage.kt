@@ -162,6 +162,7 @@ fun HomePage(onOpen: (Page) -> Unit) {
             "Set up post processing for the transcribed text"
         ) { onOpen(Page.PostProcessing) }
         NavCard(R.drawable.lucide_eye, "Appearance", "Customize Iris to fit you") { onOpen(Page.Appearance) }
+        NavCard(R.drawable.lucide_rotate_ccw_clock, "History", "Your recent dictations") { onOpen(Page.History) }
         NavCard(
             R.drawable.lucide_gauge,
             "Statistics",

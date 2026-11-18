@@ -82,6 +82,9 @@ internal const val LANGUAGE_DETECTION_TIMEOUT_MS = 1_000L
  * @param vadContext where the VAD gate runs (model load and inference: CPU work, off the main thread).
  * @param record called once per session whose [onFinalTranscript] returned (stopped, non-blank text), with the
  *   session's settings and its measurements; must return at once. Not for a transcript that arrived before the stop.
+ * @param history called once per session whose [onFinalTranscript] returned, with the provider's transcript (before
+ *   filler and custom-word fixes) and [DictationState.Done.text]; also for a transcript that arrived before the stop.
+ *   Must return at once.
  * @param detectLanguage the transcript's language (ISO 639-1) detected from its text, or null if unsure; only called
  *   when filler removal is on, the settings don't give the language and a language-gated filler is in the text; must
  *   not throw. Bounded by [LANGUAGE_DETECTION_TIMEOUT_MS].
@@ -97,6 +100,7 @@ class DictationController(
     private val vadContext: CoroutineContext = Dispatchers.Default,
     private val clock: () -> Long = SystemClock::elapsedRealtimeNanos,
     private val record: (Settings, DictationRecord) -> Unit = { _, _ -> },
+    private val history: (raw: String, finalText: String) -> Unit = { _, _ -> },
     private val detectLanguage: suspend (text: String) -> String? = { null },
 ) {
     private val _state = MutableStateFlow<DictationState>(DictationState.Idle)
@@ -238,6 +242,7 @@ class DictationController(
                     DictationState.Error(NO_SPEECH)
                 } else {
                     val done = onFinalTranscript(text)
+                    history(transcript, done.text)
                     if (stop != null) {
                         val recordedMs = ms(recordedBytes, rate)
                         val sentMs = ms(sentBytes, rate)

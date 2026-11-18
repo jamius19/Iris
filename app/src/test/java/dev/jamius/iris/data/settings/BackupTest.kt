@@ -307,6 +307,25 @@ class BackupTest {
     }
 
     @Test
+    fun historySettingsRoundTrip() {
+        val prefs = mutablePreferencesOf(
+            booleanPreferencesKey("history_enabled") to false,
+            intPreferencesKey("history_limit") to 5,
+        )
+
+        val restored = roundTrip(BackupContents(prefs, emptyMap()))
+
+        assertEquals(prefs.asMap(), restored.prefs.asMap())
+        val settings = restored.prefs.toSettings(emptySet())
+        assertFalse(settings.historyEnabled)
+        assertEquals(5, settings.historyLimit)
+
+        val defaults = roundTrip(BackupContents(emptyPreferences(), emptyMap())).prefs.toSettings(emptySet())
+        assertTrue(defaults.historyEnabled)
+        assertEquals(20, defaults.historyLimit)
+    }
+
+    @Test
     fun malformedCustomWordsAreRejected() {
         expectFailure(DAMAGED) { decodeBackup(payload(""""custom_words":{"type":"string","value":"[1,"}""")) }
     }

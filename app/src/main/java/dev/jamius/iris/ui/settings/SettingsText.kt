@@ -11,6 +11,10 @@ import dev.jamius.iris.stt.ondevice.OnDeviceModel
 import dev.jamius.iris.stt.ondevice.SpeedVerdict
 import dev.jamius.iris.stt.ondevice.roundToTenth
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 fun reasoningEffortLabel(effort: String?): String = when (effort) {
     null -> "Model default"
@@ -237,6 +241,12 @@ fun customWordsUnsentNote(
     cleanupEnabled -> "Not sent to this model. Only the LLM cleanup applies."
     else -> "Not sent to this model, so custom words have no effect."
 }
+
+private val HISTORY_TIME = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.US)
+
+/** A History entry's time in [zone], 12-hour: "18 Nov 2026, 2:05 PM". */
+fun historyTimeText(epochMs: Long, zone: ZoneId): String =
+    HISTORY_TIME.format(Instant.ofEpochMilli(epochMs).atZone(zone))
 
 private const val NEW_PROMPT = "New prompt"
 

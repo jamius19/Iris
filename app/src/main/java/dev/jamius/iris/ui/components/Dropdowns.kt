@@ -312,7 +312,7 @@ private fun LabelWithBadge(
  * Read-only black dropdown (fixed choices): shows [selected]; a pick closes the panel and calls [onSelect] if it
  * changed. [optionIcon] (if any) is drawn before each option's text and [optionBadge] (if any) right after it, in
  * the field and the panel. Options that [streams] get the radio icon (menu rows only). TalkBack: "[label],
- * <value>, Collapsed/Expanded, drop down list".
+ * <value>, Collapsed/Expanded, drop down list". Not [enabled]: can't open (TalkBack reads it as disabled).
  */
 @Composable
 fun <T> SelectDropdown(
@@ -322,6 +322,7 @@ fun <T> SelectDropdown(
     optionLabel: (T) -> String,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     optionIcon: (@Composable (T) -> Unit)? = null,
     optionBadge: (@Composable (T) -> Unit)? = null,
     streams: (T) -> Boolean = { false },
@@ -338,6 +339,7 @@ fun <T> SelectDropdown(
                 .clickable(
                     interactionSource = null,
                     indication = PressIndication(colors.pressOverlayOnControl),
+                    enabled = enabled,
                     role = Role.DropdownList,
                     onClickLabel = "Change"
                 ) {
@@ -409,6 +411,7 @@ fun <T> SelectField(
     helper: String? = null,
     error: String? = null,
     spacing: Dp = 8.dp,
+    enabled: Boolean = true,
     optionIcon: (@Composable (T) -> Unit)? = null,
     optionBadge: (@Composable (T) -> Unit)? = null,
     streams: (T) -> Boolean = { false },
@@ -428,6 +431,7 @@ fun <T> SelectField(
             selected,
             optionLabel,
             onSelect = { saveState.save { onSave(it) } },
+            enabled = enabled,
             optionIcon = optionIcon,
             optionBadge = optionBadge,
             streams = streams

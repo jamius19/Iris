@@ -51,6 +51,9 @@ class DictationControllerTest {
     /** The final-transcript hook's and the record's calls, in order. */
     private val events = mutableListOf<String>()
 
+    /** The history hook's calls: the provider's transcript to the delivered text. */
+    private val histories = mutableListOf<Pair<String, String>>()
+
     /** A 100 ms chunk every 100 ms until cancelled. */
     private val audio: Flow<ByteArray> = flow {
         try {
@@ -143,6 +146,7 @@ class DictationControllerTest {
             events += "record"
             records += s to d
         },
+        history = { raw, final -> histories += raw to final },
         detectLanguage = detectLanguage,
     )
 
@@ -1032,6 +1036,8 @@ class DictationControllerTest {
 
         assertEquals(DictationState.Done("Hi"), controller.state.value)
         assertTrue(records.isEmpty())
+        // History keeps early-finish dictations, Statistics doesn't.
+        assertEquals(listOf("Hi" to "Hi"), histories)
     }
 
     @Test
@@ -1104,6 +1110,26 @@ class DictationControllerTest {
         advanceTimeBy(500)
 
         assertTrue(records.isEmpty())
+        assertTrue(histories.isEmpty())
+    }
+
+    @Test
+    fun cancelDuringTheHookRecordsNoHistory() = runTest {
+        val controller = controller(FakeStt { "Hi" }, onFinalTranscript = {
+            finals += it
+            delay(500)
+            DictationState.Done(it)
+        })
+        controller.start()
+        runCurrent()
+        controller.stop()
+        advanceTimeBy(300)
+        controller.cancel()
+        advanceTimeBy(1_000)
+
+        assertEquals(DictationState.Idle, controller.state.value)
+        assertEquals(listOf("Hi"), finals)
+        assertTrue(histories.isEmpty())
     }
 
     /** Starts [controller], stops it after the first chunk and lets the chunk recorded during the stop end it. */
@@ -1132,6 +1158,19 @@ class DictationControllerTest {
         assertEquals(DictationState.Error("No speech detected"), controller.state.value)
         assertTrue(finals.isEmpty())
         assertTrue(records.isEmpty())
+        assertTrue(histories.isEmpty())
+    }
+
+    @Test
+    fun historyGetsTheRawTranscriptAndTheDeliveredText() = runTest {
+        val controller = controller(FakeStt { "Uh, so I think, hmm, it works" }, onFinalTranscript = {
+            finals += it
+            DictationState.Done("Cleaned.")
+        })
+        dictate(controller)
+
+        assertEquals(listOf("Uh, so I think, hmm, it works" to "Cleaned."), histories)
+        assertEquals(listOf("So I think, it works"), finals)
     }
 
     @Test
@@ -1217,6 +1256,13 @@ class DictationControllerTest {
 
         assertEquals(listOf("Deepgram works"), finals)
         assertEquals(listOf("Deepgram"), stt.customWords)
+    }
+
+    @Test
+    fun historyGetsTheCorrectedTextAsDelivered() = runTest {
+        dictate(controller(FakeStt { "deep um gram works" }, settings = withWords))
+
+        assertEquals(listOf("deep um gram works" to "Deepgram works"), histories)
     }
 
     @Test

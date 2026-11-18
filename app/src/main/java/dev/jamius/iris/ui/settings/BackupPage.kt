@@ -268,8 +268,8 @@ private const val PASSWORD_HELPER = "Needed to restore the backup and can't be r
 private const val RESTORE_PASSWORD_HELPER = "The password the backup was created with."
 
 private const val BACKUP_TEXT = "Saves all settings, prompts, custom providers and API keys to an encrypted file. " +
-    "Statistics and downloaded models aren't included."
+    "History, statistics and downloaded models aren't included."
 
 private const val RESTORE_TEXT = "Replaces all settings, prompts, custom providers and API keys with the backup's. " +
-    "Anything not in the backup is removed. Statistics and downloaded models are kept, so download the restored " +
-    "on-device model if it's missing."
+    "Anything not in the backup is removed. History, statistics and downloaded models are kept, so download the " +
+    "restored on-device model if it's missing."

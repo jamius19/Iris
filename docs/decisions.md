@@ -52,10 +52,28 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
 - **A deleted custom provider's stats stay** under its last name until Reset.
 - **Billed audio ignores** keep-alive zeros, padding and per-request minimums.
 
+## History
+- **Entries are plain text in app-private storage**, not encrypted, and not in Backup, Auto Backup or device
+  transfer.
+- **Raw vs final is exact string equality**: a final text that differs only in whitespace is still shown.
+- **Recorded whatever the insertion outcome**, including early-finish transcripts that Statistics skips.
+- **A hook failure records nothing** (e.g. a clipboard error in the last-resort copy ends the session in Error).
+- **Settings are read at write time**: turning History off during cleanup drops that dictation.
+- **Off hides the list and keeps the entries.** Clear History stays available and the limit is locked.
+- **A lower limit trims at once** (by hand, by a restore, or at start).
+- **Ids are reused** after deleting the newest entry or a clear.
+- **Up to 200 entries render in a non-lazy column.**
+- **The copy check shows even where Android 13+ shows its own clipboard confirmation.** It lasts 1.5 s, and
+  meanwhile the button has a "Copied" state description for TalkBack.
+- **Entry text isn't selectable**; the copy buttons copy it.
+- **A corrupt history starts over empty.** A corrupt file is replaced (`ReplaceFileCorruptionHandler`) and a
+  malformed entries value is overwritten by the next record, so saved entries are lost rather than every read and
+  write failing.
+
 ## UI
 - **Small icon buttons and text links (licence, dontkillmyapp.com) are below the 48 dp touch guideline** (dense design;
   they sit edge to edge).
-- **No confirmation on deletes** (prompt, provider, model, statistics reset).
+- **No confirmation on deletes** (prompt, provider, model, statistics reset, history entries, Clear History).
 - **Sub-pages open fresh**: their saved state is dropped once back on Home.
 - **Release builds are arm64-v8a only**: 32-bit devices can't install the app.
 - **The Battery row checks only Android's own battery setting.** OEM task killers (HyperOS autostart, Samsung
@@ -68,7 +86,8 @@ Choices that can look like bugs or omissions. Each was decided on purpose; chang
 
 ## Backup
 - **Restore replaces everything**: keys and settings not in the backup are removed. No confirmation (as deletes).
-- **Statistics and downloaded on-device models aren't in the backup**; a restored on-device model may need a download.
+- **Statistics, history and downloaded on-device models aren't in the backup**; a restored on-device model may need
+  a download.
 - **The bubble position applies the next time the service starts** (read once at connect).
 - **PBKDF2-SHA256 with 600,000 iterations** (OWASP); a few seconds on slow phones is accepted. No minimum password
   length; the password can't be recovered.
