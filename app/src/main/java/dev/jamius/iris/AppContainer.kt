@@ -24,6 +24,7 @@ import dev.jamius.iris.data.settings.Settings
 import dev.jamius.iris.data.settings.SettingsRepository
 import dev.jamius.iris.dictation.DictationController
 import dev.jamius.iris.dictation.DictationState
+import dev.jamius.iris.dictation.History
 import dev.jamius.iris.dictation.LanguageDetector
 import dev.jamius.iris.dictation.Statistics
 import dev.jamius.iris.stt.SpeechToTextProvider
@@ -159,6 +160,25 @@ class AppContainer(context: Context) {
         speedPercent = { settingsRepository.settings.first().sttSpeedPercent }
     )
 
+    /**
+     * Dictation history for the History page (dictated text, plain text). Excluded from backup in res/xml; never in
+     * Backup.
+     */
+    val history = History(
+        PreferenceDataStoreFactory.create(corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() }) {
+            context.preferencesDataStoreFile("history")
+        },
+        appScope,
+        settings = { settingsRepository.settings.first() }
+    )
+
+    init {
+        // A lowered limit (by hand, by a restore, or at app start) drops the oldest entries at once.
+        appScope.launch {
+            settingsRepository.settings.map { it.historyLimit }.distinctUntilChanged().collect { history.trim(it) }
+        }
+    }
+
     /** The loaded on-device model (sessions; the service's bubble visibility and memory trims release it). */
     val onDeviceRecognizer = OnDeviceRecognizer(dir = { File(modelsDir, it) }, onLoaded = statistics::recordLoad)
 
@@ -280,6 +300,7 @@ class AppContainer(context: Context) {
         onFinalTranscript = onFinalTranscript,
         vadModel = sileroVad::newStream,
         record = statistics::recordDictation,
+        history = history::record,
         detectLanguage = languageDetector::detect,
     )
 }

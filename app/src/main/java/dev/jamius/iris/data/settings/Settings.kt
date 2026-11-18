@@ -119,6 +119,10 @@ data class Settings(
     val panelLines: Int,
     /** Panel's max width as a percent of the display width. */
     val panelWidthPercent: Int,
+    /** Save delivered dictations to History. */
+    val historyEnabled: Boolean,
+    /** Entries History keeps (newest). One of [HISTORY_LIMITS]; any other stored value means the default. */
+    val historyLimit: Int,
 ) {
     /** Speech-to-text goes through Vercel AI Gateway (else OpenAI direct). */
     val sttGateway: Boolean get() = sttProviderId == STT_PROVIDER_VERCEL_GATEWAY
@@ -216,6 +220,11 @@ data class Settings(
 
         /** The Unload Model options in menu order: -1 = never, 0 = immediately. */
         val ON_DEVICE_UNLOAD_MINUTES = listOf(-1, 0, 2, 5, 10, 15, 60)
+
+        const val DEFAULT_HISTORY_LIMIT = 20
+
+        /** The History Limit options in menu order. */
+        val HISTORY_LIMITS = listOf(5, 10, 20, 50, 100, 200)
 
         const val DEFAULT_STT_SPEED_PERCENT = 100
         val STT_SPEED_PERCENT_RANGE = 100..200

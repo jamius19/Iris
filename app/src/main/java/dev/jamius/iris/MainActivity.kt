@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
                         sonioxCatalog = container.sonioxCatalog,
                         onDeviceModels = container.onDeviceModels,
                         statistics = container.statistics,
+                        history = container.history,
                         favicons = container.favicons,
                         sttTakesCustomWords = container::sttTakesCustomWords
                     )

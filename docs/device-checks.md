@@ -105,7 +105,8 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
   A wrong restore password keeps the file and the password for a retry.
 - Restore that file after uninstall + reinstall: every page matches, every key works (one dictation per keyed
   provider, one cleanup), custom providers' favicons and model lists load, the Soniox catalogue reloads.
-- Restore removes a key and a custom provider added after the backup; statistics and downloaded models stay.
+- Restore removes a key and a custom provider added after the backup; statistics, history entries and downloaded
+  models stay (a lower restored History Limit trims the oldest).
 - Wrong password, a truncated copy and a non-Iris file (e.g. a photo) each show their message and change nothing.
 - Backup / restore time on a mid-range phone (KDF); buttons disabled while running; leaving the page mid-restore
   still completes it.
@@ -146,3 +147,26 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
   transcript.
 - A 5 min dictation with 100 custom words: no visible stall at stop (the correction runs on the main thread).
 - R8 release build on an arm64 phone launches and corrects (stdlib calls in `CustomWords.kt`, `Kt__*` rule).
+
+## History
+- Home shows "History" after Appearance. It opens the page; back and predictive back return Home.
+- Real voice, cleanup off, filler removal on (say "um"): the entry shows the local 12-hour time, "Transcript" with
+  the raw text and "Post Processed" with the final text. With nothing changed, only "Transcript" shows.
+- With cleanup on, final is the cleaned text. With a failing or timed-out cleanup, final is the fixed transcript.
+- Failed, no-speech and cancelled dictations add nothing. A dictation copied because the field changed is still
+  added. A Gateway early-finish dictation is added.
+- Copy puts the right text on the clipboard and shows a check for about 1.5 s. TalkBack reads "Copy transcript",
+  "Copy post processed text" and "Delete entry from <time>".
+- TalkBack announces "Copied" on the copy button after a copy (check on Android 11-12, and that it doesn't double
+  up awkwardly with the system clipboard confirmation on 13+).
+- Delete removes one entry; Clear History removes all. Both survive an app restart.
+- Set the limit to 200 with many entries, then to 5: only the 5 newest remain at once (also after a restart).
+- History off: new dictations aren't saved and the note replaces the list. On again: the old entries return.
+- Off with entries: Clear History shows and works. The History Limit dropdown is dimmed, can't be opened, and
+  TalkBack reads it as disabled. Turning History off during a cleanup means that dictation isn't saved.
+- Backup then restore keeps the toggle and limit, and the entries stay. A lower restored limit trims the oldest.
+- 200 long entries scroll smoothly.
+- `adb shell run-as dev.jamius.iris ls files/datastore` shows `history.preferences_pb`. Logcat has no transcript
+  text.
+- An R8 release build on an arm64 phone launches and opens History (java.time and the stdlib calls; see the
+  `Kt__*` gotcha).

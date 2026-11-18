@@ -19,6 +19,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
+import java.time.ZoneId
 
 class SettingsTextTest {
 
@@ -323,5 +325,15 @@ class SettingsTextTest {
             "Feature is disabled.",
             customWordsUnsentNote(enabled = false, sent = true, correctionEnabled = true, cleanupEnabled = true)
         )
+    }
+
+    @Test
+    fun historyTimeIsLocal12HourTime() {
+        fun at(iso: String, zone: String) = historyTimeText(Instant.parse(iso).toEpochMilli(), ZoneId.of(zone))
+
+        assertEquals("18 Nov 2026, 2:05 PM", at("2026-11-18T08:05:00Z", "Asia/Dhaka"))
+        assertEquals("3 Sep 2026, 12:00 AM", at("2026-09-03T00:00:00Z", "UTC"))
+        assertEquals("1 Jan 2026, 12:30 PM", at("2026-01-01T12:30:00Z", "UTC"))
+        assertEquals("1 Jan 2026, 9:07 AM", at("2026-01-01T09:07:00Z", "UTC"))
     }
 }

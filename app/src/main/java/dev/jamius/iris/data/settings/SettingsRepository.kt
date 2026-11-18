@@ -187,6 +187,14 @@ class SettingsRepository(
         dataStore.edit { it[Keys.PANEL_WIDTH_PERCENT] = percent }
     }
 
+    suspend fun setHistoryEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.HISTORY_ENABLED] = enabled }
+    }
+
+    suspend fun setHistoryLimit(limit: Int) {
+        dataStore.edit { it[Keys.HISTORY_LIMIT] = limit }
+    }
+
     /**
      * Saves the custom cleanup provider [id] (adds it, or updates the name and base URL of the existing one, keeping
      * its model settings) and selects it. A non-null [apiKey] is stored first.
@@ -327,6 +335,8 @@ internal object Keys {
     val BUBBLE_Y_FRACTION = floatPreferencesKey("bubble_y_fraction")
     val PANEL_LINES = intPreferencesKey("panel_lines")
     val PANEL_WIDTH_PERCENT = intPreferencesKey("panel_width_percent")
+    val HISTORY_ENABLED = booleanPreferencesKey("history_enabled")
+    val HISTORY_LIMIT = intPreferencesKey("history_limit")
 }
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -408,6 +418,9 @@ internal fun Preferences.toSettings(storedSecrets: Set<Secret>): Settings {
         bubbleYFraction = this[Keys.BUBBLE_Y_FRACTION] ?: Settings.DEFAULT_BUBBLE_Y_FRACTION,
         panelLines = this[Keys.PANEL_LINES] ?: Settings.DEFAULT_PANEL_LINES,
         panelWidthPercent = this[Keys.PANEL_WIDTH_PERCENT] ?: Settings.DEFAULT_PANEL_WIDTH_PERCENT,
+        historyEnabled = this[Keys.HISTORY_ENABLED] ?: true,
+        historyLimit = this[Keys.HISTORY_LIMIT]?.takeIf { it in Settings.HISTORY_LIMITS }
+            ?: Settings.DEFAULT_HISTORY_LIMIT,
     )
 }
 

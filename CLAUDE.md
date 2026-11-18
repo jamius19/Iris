@@ -27,18 +27,18 @@ decides which audio is sent; "Speed" time-stretches it to cut billed audio.
 |---|---|
 | (root) | `IrisApp`, `AppContainer` (DI, app scope, picks STT and cleanup providers), `MainActivity` (settings UI) |
 | `data.settings` | `Settings` model, `SettingsRepository` (DataStore), `SecretStore` (Keystore AES/GCM), `Backup` |
-| `ui.settings` | `SettingsApp` (navigation), the six pages, `ModelCatalogs`, `SettingsText` (pure copy helpers) |
+| `ui.settings` | `SettingsApp` (navigation), the pages, `ModelCatalogs`, `SettingsText` (pure copy helpers) |
 | `ui.components` / `ui.theme` | Design system (cards, fields, dropdowns, slider, `Saver`); `IrisTheme` colours + type |
 | `audio` | `AudioRecorder` (PCM16 mono), `SileroVad`, `SpeechGate` (pure VAD gate), `timeStretched` (Sonic) |
 | `stt` | `SpeechToTextProvider`; `stt.openai` / `vercel` / `deepgram` / `soniox` / `ondevice`; `Wav.kt` (uploads) |
 | `cleanup` | `CleanupProvider`; `cleanup.vercel` / `openrouter` / `compatible` (user-added OpenAI-compatible) |
-| `dictation` | `DictationController` (state machine), `Statistics`, `FillerWords`, `CustomWords`, `LanguageDetector` |
+| `dictation` | `DictationController` (state machine), `Statistics`, `History`, `FillerWords`, `CustomWords`, `LanguageDetector` |
 | `overlay` | `IrisAccessibilityService`, `BubbleOverlay` (bubble + pill + text panel), `TextInsertion` |
 
 Session flow (`DictationController`, main thread): `Idle -> Listening -> Finalizing -> Done | Error -> Idle`.
 Audio pipeline: `AudioRecorder.chunks(rate)` (50 ms chunks) -> `SpeechGate` (VAD) -> `transformWhile` (level, stop
 check, keep-alive) -> `onCompletion` (no speech check) -> `timeStretched` -> `stt.transcribe` -> filler removal ->
-custom words -> `IrisAccessibilityService.onFinalTranscript` (cleanup + insertion) -> `Statistics`.
+custom words -> `IrisAccessibilityService.onFinalTranscript` (cleanup + insertion) -> `History`, `Statistics`.
 
 Only two abstractions: `SpeechToTextProvider` and `CleanupProvider`. Provider choice is
 `AppContainer.speechToText(settings)` / `cleanup(settings)`, not a router. A new provider is a new implementation.
@@ -58,7 +58,7 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
 - Settings autosave on blur (no Save buttons), except the custom cleanup provider form.
 - Custom cleanup providers are HTTPS only; a changed base URL host needs a new key (never send a key elsewhere).
 - Backup and Restore: password file (PBKDF2-SHA256 600k + AES-256-GCM, platform crypto) through SAF; restore
-  replaces all settings and API keys, never statistics or downloaded models.
+  replaces all settings and API keys, never statistics, history or downloaded models.
 - Accepted trade-offs that can look like bugs are listed in `docs/decisions.md`: check it before "fixing" one.
 
 ## Gotchas
@@ -107,6 +107,9 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
   (HyperOS draws every weight at 400).
 - **Regex on Android**: `UNICODE_CHARACTER_CLASS` throws. Use explicit `\p{L}\p{N}` lookarounds.
 - **Statistics DataStore file** is named `on_device_stats` on purpose: renaming orphans stored data.
+- **History DataStore file** `history`. It holds dictated text in plain text and is excluded from Auto Backup and
+  device transfer (`backup_rules.xml`, `data_extraction_rules.xml`). It is never in Backup, and its text is never
+  logged.
 - **ABI filters**: release is arm64-v8a only, so a release build won't install on the x86_64 emulator.
 
 ## Conventions
@@ -145,5 +148,5 @@ Provider differences are interface members (`sampleRate(model)`, `streams`, `liv
 
 ## Status
 CP1-CP18 are done (settings, overlay, OpenAI/Gateway/Deepgram/Soniox STT, VAD, speed-up, cleanup providers,
-settings redesign, on-device STT incl. streaming, statistics, filler words), plus backup and restore and custom
-words. Real-voice device checks are still pending for CP6 onwards.
+settings redesign, on-device STT incl. streaming, statistics, filler words), plus backup and restore, custom words
+and history. Real-voice device checks are still pending for CP6 onwards.

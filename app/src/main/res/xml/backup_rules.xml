@@ -10,6 +10,8 @@
     <exclude domain="file" path="datastore/secrets.preferences_pb" />
     <!-- On-device model statistics: measured on this phone. -->
     <exclude domain="file" path="datastore/on_device_stats.preferences_pb" />
+    <!-- Dictation history: dictated text, kept on this phone only. -->
+    <exclude domain="file" path="datastore/history.preferences_pb" />
     <!--
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>

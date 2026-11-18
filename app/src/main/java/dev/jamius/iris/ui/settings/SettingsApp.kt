@@ -43,6 +43,7 @@ import dev.jamius.iris.cleanup.GatewayModel
 import dev.jamius.iris.data.settings.CustomCleanupProvider
 import dev.jamius.iris.data.settings.Settings
 import dev.jamius.iris.data.settings.SettingsRepository
+import dev.jamius.iris.dictation.History
 import dev.jamius.iris.dictation.Statistics
 import dev.jamius.iris.stt.ondevice.OnDeviceModelStore
 import dev.jamius.iris.stt.soniox.SonioxCatalog
@@ -51,7 +52,7 @@ import dev.jamius.iris.ui.theme.IrisTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-enum class Page { Home, Transcription, PostProcessing, CustomWords, Appearance, Statistics, Backup }
+enum class Page { Home, Transcription, PostProcessing, CustomWords, Appearance, History, Statistics, Backup }
 
 /** The page back returns to: Custom Words is under Post Processing, the others under Home (which has none). */
 val Page.parent: Page?
@@ -62,7 +63,7 @@ val Page.parent: Page?
     }
 
 /**
- * The settings UI: Home, its five sub-pages and Custom Words under Post Processing (own navigation state, slide
+ * The settings UI: Home, its six sub-pages and Custom Words under Post Processing (own navigation state, slide
  * transitions, predictive back; back goes to the page's [parent]), the model catalogues and their load triggers.
  * Leaving a page, the app (ON_STOP) or tapping empty space clears focus, which commits a focused text field.
  */
@@ -77,6 +78,7 @@ fun SettingsApp(
     sonioxCatalog: SonioxCatalog,
     onDeviceModels: OnDeviceModelStore,
     statistics: Statistics,
+    history: History,
     favicons: Favicons,
     sttTakesCustomWords: (Settings) -> Boolean,
 ) {
@@ -87,6 +89,7 @@ fun SettingsApp(
     val onDeviceState by onDeviceModels.state.collectAsState()
     // Here, not in the page: read before the page slides in, and kept while it's closed. Null until the first read.
     val stats = statistics.stats.collectAsState(initial = null).value
+    val historyEntries = history.entries.collectAsState(initial = null).value
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     // A restore starts a fresh instance, so the effects below reload whatever the restored settings select.
@@ -208,6 +211,15 @@ fun SettingsApp(
                     )
                     Page.CustomWords -> CustomWordsPage(settings, repository, saver, onBack = back)
                     Page.Appearance -> AppearancePage(settings, repository, saver, onBack = back)
+                    Page.History -> HistoryPage(
+                        settings,
+                        repository,
+                        saver,
+                        entries = historyEntries,
+                        onDelete = history::delete,
+                        onClear = history::clear,
+                        onBack = back
+                    )
                     Page.Statistics -> StatisticsPage(stats, statistics::reset, onBack = back)
                     Page.Backup -> BackupPage(repository, onRestored = { catalogGeneration++ }, onBack = back)
                 }
