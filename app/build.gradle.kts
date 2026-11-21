@@ -14,8 +14,8 @@ android {
         applicationId = "dev.jamius.iris"
         minSdk = 30
         targetSdk = 37
-        versionCode = 10
-        versionName = "0.12.0"
+        versionCode = 11
+        versionName = "0.12.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
