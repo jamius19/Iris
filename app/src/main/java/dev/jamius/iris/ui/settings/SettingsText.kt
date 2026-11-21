@@ -152,6 +152,12 @@ fun tenthsText(ms: Long): String {
 fun statsBasisText(count: Int, noun: String = "dictation"): String =
     if (count == 1) "From your last $noun." else "From your last $count ${noun}s."
 
+/** A cloud card's footer: Transcription Time is from the window, Audio Sent is all time. */
+fun cloudBasisText(count: Int): String {
+    val window = if (count == 1) "your last dictation" else "your last $count dictations"
+    return "Transcription Time is from $window. Audio Sent is all time."
+}
+
 /** Milliseconds as minutes, rounded to tenths: "12.4 min". */
 fun minutesText(ms: Long): String {
     val tenths = (ms + 3_000) / 6_000

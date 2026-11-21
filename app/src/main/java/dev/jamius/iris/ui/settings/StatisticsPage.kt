@@ -92,8 +92,6 @@ fun StatisticsPage(stats: StatsSnapshot?, onReset: () -> Unit, onBack: () -> Uni
         }
         for (c in cloud) {
             Section(c.title) {
-                val recordedMs = c.samples.sumOf { it.recordedMs }
-                val billedMs = c.samples.sumOf { it.billedMs }
                 StatRow(
                     "Transcription Time",
                     tenthsText(checkNotNull(median(c.samples.map { it.waitMs }))),
@@ -103,11 +101,11 @@ fun StatisticsPage(stats: StatsSnapshot?, onReset: () -> Unit, onBack: () -> Uni
                 Separator()
                 StatRow(
                     "Audio Sent",
-                    minutesText(billedMs),
+                    minutesText(c.billedMs),
                     colors.text,
-                    audioSavedText(savedPercent(recordedMs, billedMs))
+                    audioSavedText(savedPercent(c.recordedMs, c.billedMs))
                 )
-                Text(statsBasisText(c.samples.size), type.helper, color = colors.muted)
+                Text(cloudBasisText(c.samples.size), type.helper, color = colors.muted)
             }
         }
         for (c in cleanup) {
