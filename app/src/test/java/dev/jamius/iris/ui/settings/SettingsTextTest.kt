@@ -197,6 +197,8 @@ class SettingsTextTest {
         assertEquals("From your last 12 dictations.", statsBasisText(12))
         assertEquals("From your last post processing request.", statsBasisText(1, "post processing request"))
         assertEquals("From your last 5 post processing requests.", statsBasisText(5, "post processing request"))
+        assertEquals("Transcription Time is from your last dictation. Audio Sent is all time.", cloudBasisText(1))
+        assertEquals("Transcription Time is from your last 20 dictations. Audio Sent is all time.", cloudBasisText(20))
     }
 
     @Test

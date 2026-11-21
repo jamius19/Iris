@@ -33,9 +33,20 @@ import java.io.IOException
 @Serializable
 data class CloudSample(val waitMs: Long, val recordedMs: Long, val billedMs: Long)
 
-/** A cloud provider + model's last [MAX_SAMPLES] dictations, oldest first; [title] as of the last one. */
+/**
+ * A cloud provider + model's last [MAX_SAMPLES] dictations, oldest first, and all-time sums of their recorded and
+ * billed audio; [title] as of the last one. Data stored before the sums existed has null: its window seeds them.
+ */
 @Serializable
-data class CloudStats(val title: String, val samples: List<CloudSample> = emptyList())
+data class CloudStats(
+    val title: String,
+    val samples: List<CloudSample> = emptyList(),
+    private val allRecordedMs: Long? = null,
+    private val allBilledMs: Long? = null,
+) {
+    val recordedMs: Long get() = allRecordedMs ?: samples.sumOf { it.recordedMs }
+    val billedMs: Long get() = allBilledMs ?: samples.sumOf { it.billedMs }
+}
 
 /** A cleanup provider + model's last [MAX_SAMPLES] successful cleanup times, oldest first. */
 @Serializable
@@ -99,15 +110,22 @@ fun cleanupKey(s: Settings): String = "${s.cleanupProviderId}|${s.activeCleanupM
 fun cleanupTitle(s: Settings): String =
     "${cleanupProviderLabel(s.cleanupProviderId, s.customCleanupProviders)} · ${s.activeCleanupModel}"
 
-/** Adds [d] to the totals and, for a cloud provider, to its window (last [MAX_SAMPLES]). */
+/** Adds [d] to the totals and, for a cloud provider, to its sums and window (last [MAX_SAMPLES]). */
 fun StatsSnapshot.withDictation(s: Settings, d: DictationRecord): StatsSnapshot {
     val saved = typingSavedMs(d.words, d.recordedMs, d.doneMs)
     val totals = Totals(totals.recordedMs + d.recordedMs, totals.savedMs + saved)
     if (s.sttOnDevice) return copy(totals = totals)
     val key = cloudKey(s)
     val sample = CloudSample(d.waitMs, d.recordedMs, d.billedMs)
-    val samples = (cloud[key]?.samples.orEmpty() + sample).takeLast(MAX_SAMPLES)
-    return copy(cloud = cloud + (key to CloudStats(cloudTitle(s), samples)), totals = totals)
+    val old = cloud[key]
+    val samples = (old?.samples.orEmpty() + sample).takeLast(MAX_SAMPLES)
+    val stats = CloudStats(
+        cloudTitle(s),
+        samples,
+        (old?.recordedMs ?: 0) + d.recordedMs,
+        (old?.billedMs ?: 0) + d.billedMs
+    )
+    return copy(cloud = cloud + (key to stats), totals = totals)
 }
 
 /** Adds a successful cleanup's [ms] to the selected provider + model's window (last [MAX_SAMPLES]). */

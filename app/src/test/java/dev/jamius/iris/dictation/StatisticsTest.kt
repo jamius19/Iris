@@ -110,7 +110,7 @@ class StatisticsTest {
             .withDictation(gateway, record(recordedMs = 5_000, billedMs = 5_000, waitMs = 300, doneMs = 300))
 
         assertEquals(
-            CloudStats("Deepgram · nova-3", listOf(CloudSample(800, 10_000, 6_000))),
+            CloudStats("Deepgram · nova-3", listOf(CloudSample(800, 10_000, 6_000)), 10_000, 6_000),
             after.cloud.getValue("deepgram|nova-3")
         )
         assertEquals(
@@ -126,8 +126,26 @@ class StatisticsTest {
         var stats = StatsSnapshot()
         for (i in 1..21) stats = stats.withDictation(openAi, record(waitMs = i.toLong()))
 
-        assertEquals((2L..21L).toList(), stats.cloud.getValue(cloudKey(openAi)).samples.map { it.waitMs })
+        val openAiStats = stats.cloud.getValue(cloudKey(openAi))
+        assertEquals((2L..21L).toList(), openAiStats.samples.map { it.waitMs })
         assertEquals(210_000L, stats.totals.recordedMs)
+        // The audio sums stay all time.
+        assertEquals(210_000L, openAiStats.recordedMs)
+        assertEquals(126_000L, openAiStats.billedMs)
+    }
+
+    @Test
+    fun cloudStatsStoredWithoutSumsAreSeededFromTheirWindow() {
+        val old = decodeCloud(
+            """{"openai|gpt-live-transcribe":{"title":"OpenAI · gpt-live-transcribe",""" +
+                """"samples":[{"waitMs":1,"recordedMs":2000,"billedMs":1000}]}}"""
+        )
+        assertEquals(2_000L, old.getValue("openai|gpt-live-transcribe").recordedMs)
+
+        val after = StatsSnapshot(cloud = old).withDictation(openAi, record())
+
+        assertEquals(12_000L, after.cloud.getValue(cloudKey(openAi)).recordedMs)
+        assertEquals(7_000L, after.cloud.getValue(cloudKey(openAi)).billedMs)
     }
 
     @Test
@@ -157,7 +175,7 @@ class StatisticsTest {
 
     @Test
     fun encodeDecodeRoundTrips() {
-        val cloud = mapOf("openai|x" to CloudStats("OpenAI · x", listOf(CloudSample(1, 2, 3), CloudSample(4, 5, 6))))
+        val cloud = mapOf("openai|x" to CloudStats("OpenAI · x", listOf(CloudSample(1, 2, 3), CloudSample(4, 5, 6)), 70, 80))
         val cleanup = mapOf("openrouter|y" to CleanupStats("OpenRouter · y", listOf(1, 2, 3)))
         val totals = Totals(123, -45)
 

@@ -83,6 +83,8 @@ mic is silent, so every real-voice item is still unverified. Run the relevant gr
 - TalkBack reads dropdowns, switches, sliders (name + value), icon buttons and a saved key ("API Key, Saved").
 - Statistics match the logs: Speed ≈ sent audio ÷ decode time, Transcription Time ≈ median `stop->transcript`,
   cleanup p90 ≈ the high end of `cleanup X ms`. "No speech detected" and ✕ add nothing. Stats survive a restart.
+- After an update, a cloud card's Audio Sent starts from its old value. It keeps growing after the 20th dictation,
+  while Transcription Time stays on the last 20.
 - Battery Usage row: set Unrestricted, Optimized and Restricted in App info, return to Home: the row shows each
   (Unrestricted in blue, no Setup; the others in the failure colour with helper and Setup). On HyperOS, check
   "No restrictions" reads as Unrestricted.
